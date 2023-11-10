@@ -43,7 +43,7 @@ struct PingCommand: AsyncParsableCommand {
     var verbose: Bool = false
     
     #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-    @Flag(help: "Use URLSession for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
+    @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
     var useNative: Bool = false
     #endif
     
@@ -95,9 +95,7 @@ struct PingCommand: AsyncParsableCommand {
 
         let pingConfig = pingConfigStorage
         
-        var config = LCLPing.Configuration()
-        config.verbose = verbose
-        config.useNative = useNative
+        let config = LCLPing.Configuration(verbose: verbose, useNative: useNative)
 
         do {
             signal(SIGINT, SIG_IGN)
