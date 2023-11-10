@@ -15,7 +15,7 @@ enum Colors: String {
     case `default` = "\u{001B}[0;0m"
 }
 
-func matchInterval(pingResult: PingResult, type: LCLPing.Configuration.PingType) -> String {
+func matchInterval(pingResult: PingResult, type: LCLPing.PingConfiguration.PingType) -> String {
     let color: Colors
     switch type {
     case .icmp:

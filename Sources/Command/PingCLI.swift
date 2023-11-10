@@ -6,6 +6,12 @@ import LCLPing
 import Foundation
 import Dispatch
 
+#if canImport(Darwin)
+import Darwin   // Apple platforms
+#elseif canImport(Glibc)
+import Glibc    // GlibC Linux platforms
+#endif
+
 
 @main
 struct PingCommand: AsyncParsableCommand {
@@ -15,23 +21,31 @@ struct PingCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "The host that the ping request will be sent to.")
     var host: String
     
-    @Option(name: .shortAndLong, help: "The port on the host to connec to")
-    var port: Int?
+    @Option(name: .shortAndLong, help: "The port on the host to connec to, ranging from 0 to 65535")
+    var port: UInt16?
 
-    @Option(name: .shortAndLong, help: "Specify the number of times LCLPing runs the test.")
-    var count: Int?
+    @Option(name: .shortAndLong, help: "Specify the number of times LCLPing runs the test. The number has to be greater than 0. Default is 10.")
+    var count: UInt16?
     
-    @Option(name: .shortAndLong, help: "The wait time, in second, between sending consecutive packet")
+    @Option(name: .shortAndLong, help: "The wait time, in second, between sending consecutive packet. Default is 1 second.")
     var interval: TimeInterval?
     
-    @Option(name: .long, help: "Time-to-live for outgoing packets")
-    var ttl: Int?
+    @Option(name: .long, help: "Time-to-live for outgoing packets. The number has to be greater than 0. Default is 64.")
+    var ttl: UInt16?
     
-    @Option(name: .long, help: "Time, in second, to wait for a reply for each packet sent")
+    @Option(name: .long, help: "Time, in second, to wait for a reply for each packet sent. Default is 1 second.")
     var timeout: TimeInterval?
     
     @OptionGroup
     var httpConfiguration: HTTPOptionCommand
+    
+    @Flag(help: "Include extra information in the output.")
+    var verbose: Bool = false
+    
+    #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+    @Flag(help: "Use URLSession for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
+    var useNative: Bool = false
+    #endif
     
     static var configuration: CommandConfiguration = CommandConfiguration(
         commandName: "lclping",
@@ -41,43 +55,67 @@ struct PingCommand: AsyncParsableCommand {
         ]
     )
     
+    func validate() throws {
+        if !["icmp", "http"].contains(type) {
+            throw CLIError.invalidPingType
+        }
+    }
+    
     func run() async throws {
-        let pingType: LCLPing.Configuration.PingType
+        let pingType: LCLPing.PingConfiguration.PingType
         switch type {
             case "icmp":
                 pingType = .icmp
             case "http":
-                var httpConfig = LCLPing.Configuration.HTTPOptions()
+                var httpConfig = LCLPing.PingConfiguration.HTTPOptions()
                 httpConfig.useServerTiming = httpConfiguration.useServerTiming
                 pingType = .http(httpConfig)
             default:
                 fatalError("Unknown type \(type). Must be either 'icmp' or 'http'.")
         }
 
-        let endpoint = LCLPing.Configuration.IP.ipv4(host, port == nil ? nil : UInt16(port!))
+        let endpoint = LCLPing.PingConfiguration.IP.ipv4(host, port == nil ? nil : port!)
 
-        var pingConfig = LCLPing.Configuration(type: pingType, endpoint: endpoint)
+        var pingConfigStorage = LCLPing.PingConfiguration(type: pingType, endpoint: endpoint)
         if let count = count {
-            pingConfig.count = uint16(count)
+            pingConfigStorage.count = count
         }
 
         if let interval = interval {
-            pingConfig.interval = interval
+            pingConfigStorage.interval = interval
         }
 
         if let ttl = ttl {
-            pingConfig.timeToLive = UInt16(ttl)
+            pingConfigStorage.timeToLive = UInt16(ttl)
         }
 
         if let timeout = timeout {
-            pingConfig.timeout = timeout
+            pingConfigStorage.timeout = timeout
         }
 
-        let config = pingConfig
+        let pingConfig = pingConfigStorage
+        
+        var config = LCLPing.Configuration()
+        config.verbose = verbose
+        config.useNative = useNative
 
         do {
-            var ping = LCLPing()
-            try await ping.start(configuration: config)
+            signal(SIGINT, SIG_IGN)
+            
+            var ping = LCLPing(configuration: config)
+            
+            // handle ctrl-c signal
+            let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+            
+            stopSignal.setEventHandler {
+                print("Exit!!!!!!!!")
+                ping.stop()
+                return
+            }
+            
+            stopSignal.resume()
+            
+            try await ping.start(pingConfiguration: pingConfig)
             switch ping.status {
                 case .error, .ready, .running:
                     print("LCLPing encountered some error while running tests")
@@ -89,7 +127,7 @@ struct PingCommand: AsyncParsableCommand {
         }
     }
 
-    private func printSummary(_ pingSummary: PingSummary, for type: LCLPing.Configuration.PingType) {
+    private func printSummary(_ pingSummary: PingSummary, for type: LCLPing.PingConfiguration.PingType) {
         print("====== Ping Result ======")
         let protocolType = ProtocolType(rawValue: pingSummary.protocol)
         print("Host: \(pingSummary.ipAddress):\(pingSummary.port) [\(protocolType?.string ?? "Unknown Protocol")]")
