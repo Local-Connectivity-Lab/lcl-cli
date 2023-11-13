@@ -5,6 +5,7 @@ import ArgumentParser
 import LCLPing
 import Foundation
 import Dispatch
+import Yams
 
 #if canImport(Darwin)
 import Darwin   // Apple platforms
@@ -46,6 +47,12 @@ struct PingCommand: AsyncParsableCommand {
     @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
     var useNative: Bool = false
     #endif
+
+    @Flag(help: "Export the Ping result in JSON format.")
+    var json: Bool = false
+
+    @Flag(help: "Export the Ping result in YAML format.")
+    var yaml: Bool = false
     
     static var configuration: CommandConfiguration = CommandConfiguration(
         commandName: "lclping",
@@ -95,12 +102,12 @@ struct PingCommand: AsyncParsableCommand {
 
         let pingConfig = pingConfigStorage
         
-        let config = LCLPing.Configuration(verbose: verbose, useNative: useNative)
+        let options = LCLPing.Options(verbose: verbose, useNative: useNative)
 
         do {
             signal(SIGINT, SIG_IGN)
             
-            var ping = LCLPing(configuration: config)
+            var ping = LCLPing(options: options)
             
             // handle ctrl-c signal
             let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
@@ -118,14 +125,61 @@ struct PingCommand: AsyncParsableCommand {
                 case .error, .ready, .running:
                     print("LCLPing encountered some error while running tests")
                 case .stopped, .finished:
-                printSummary(ping.summary, for: pingType)
+                var outputFormats: Set<OutputFormat> = []
+                    if json {
+                        outputFormats.insert(.json)
+                    }
+
+                    if yaml {
+                        outputFormats.insert(.yaml)
+                    }
+
+                    if outputFormats.isEmpty {
+                        outputFormats.insert(.default)
+                    }
+
+                    printSummary(ping.summary, for: pingType, formats: outputFormats)
             }
         } catch {
             print("LCLPing encountered some error while running tests: \(error)")
         }
     }
 
-    private func printSummary(_ pingSummary: PingSummary, for type: LCLPing.PingConfiguration.PingType) {
+    private func printSummary(_ pingSummary: PingSummary, for type: LCLPing.PingConfiguration.PingType, formats: Set<OutputFormat>) {
+        for format in formats {
+            switch format {
+                case .json:
+                printSummaryInJSON(pingSummary: pingSummary)
+                case .yaml:
+                printSummaryInYAML(pingSummary: pingSummary)
+                case .default:
+                printSummaryDefault(pingSummary: pingSummary, type: type)
+            }
+        }
+    }
+    
+    private func printSummaryInJSON(pingSummary: PingSummary) {
+        let jsonEncoder = JSONEncoder()
+        jsonEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let result = try? jsonEncoder.encode(pingSummary) else {
+            print("PingSummary is corrupted and unable to output in JSON format.")
+            return
+        }
+
+        print(String(data: result, encoding: .utf8)!)
+    }
+
+    private func printSummaryInYAML(pingSummary: PingSummary) {
+        let yamlEncoder = YAMLEncoder()
+        yamlEncoder.options = .init(sortKeys: true)
+        guard let result = try? yamlEncoder.encode(pingSummary) else {
+            print("PingSummary is corrupted and unable to output in YAML format.")
+            return
+        }
+        print(result)   
+    }
+
+    private func printSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingConfiguration.PingType) {
         print("====== Ping Result ======")
         let protocolType = ProtocolType(rawValue: pingSummary.protocol)
         print("Host: \(pingSummary.ipAddress):\(pingSummary.port) [\(protocolType?.string ?? "Unknown Protocol")]")
