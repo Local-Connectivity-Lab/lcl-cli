@@ -45,7 +45,7 @@ struct PingCommand: AsyncParsableCommand {
     
     #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
-    var useNative: Bool = false
+    var useURLSession: Bool = false
     #endif
 
     @Flag(help: "Export the Ping result in JSON format.")
@@ -102,7 +102,7 @@ struct PingCommand: AsyncParsableCommand {
 
         let pingConfig = pingConfigStorage
         
-        let options = LCLPing.Options(verbose: verbose, useNative: useNative)
+        let options = LCLPing.Options(verbose: verbose, useNative: useURLSession)
 
         do {
             signal(SIGINT, SIG_IGN)
@@ -113,7 +113,7 @@ struct PingCommand: AsyncParsableCommand {
             let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
             
             stopSignal.setEventHandler {
-                print("Exit!!!!!!!!")
+                print("Exit from Ping Test")
                 ping.stop()
                 return
             }
@@ -187,9 +187,7 @@ struct PingCommand: AsyncParsableCommand {
         
         print("====== Details ======")
         
-        for detail in pingSummary.details {
-            print(matchInterval(pingResult: detail, type: type))
-        }
+        print(pingSummary.details.renderTextTable())
         
         print("Duplicate: \(pingSummary.duplicates.sorted())")
         print("Timeout: \(pingSummary.timeout.sorted())")
