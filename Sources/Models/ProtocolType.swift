@@ -1,8 +1,13 @@
 //
-//  ProtocolType.swift
-//  
+// This source file is part of the LCLPing open source project
 //
-//  Created by JOHN ZZN on 11/7/23.
+// Copyright (c) 2021-2024 Local Connectivity Lab and the project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE for license information
+// See CONTRIBUTORS for the list of project authors
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 
 import Foundation
