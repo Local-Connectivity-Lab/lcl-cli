@@ -9,14 +9,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
 import Foundation
 
-enum CLIError: Error {
-    case invalidPingType
-    case failedToReadFile(String)
-    case requestRedirected(Int)
-    case clientError(Int)
-    case serverError(Int)
-    case uploadError
-    case invalidURL(String)
+extension Data {
+    
+    /// The hex String representation of the given `Data`
+    var hex: String {
+        reduce("") { $0 + String(format: "%02hhx", $1) }
+    }
 }
