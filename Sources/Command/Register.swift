@@ -16,13 +16,13 @@ import ArgumentParser
 import LCLPingAuth
 
 
-extension PingCLI {
-    struct Register: AsyncParsableCommand {
+extension LCLCLI {
+    struct RegisterCommand: AsyncParsableCommand {
         
         @Option(name: .shortAndLong, help: "Path to the SCN credential file given by the SCN administrator.")
         var filePath: String
         
-        static let configuration = CommandConfiguration(abstract: "Register with SCN server to report test data.")
+        static let configuration = CommandConfiguration(commandName: "register", abstract: "Register with SCN server to report test data.")
         
         func run() async throws {
             guard let credentialData = try FileIO.default.loadFrom(fileName: filePath) else {
@@ -73,7 +73,7 @@ extension PingCLI {
             let sigma_r = try ECDSA.sign(message: h_concat, privateKey: sk_t)
             let registration = RegistrationModel(sigmaR: sigma_r.hex, h: h_concat.hex, R: validationResult.R.hex)
             let registrationJson = try JSONEncoder().encode(registration)
-            switch try await Networking.send(to: Networking.Endpoint.register.url, using: registrationJson) {
+            switch try await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
             case .success():
                 print("Registration complete!")
             case .failure(let error):

@@ -24,14 +24,16 @@ import Glibc    // GlibC Linux platforms
 
 
 @main
-struct PingCLI: AsyncParsableCommand {
+struct LCLCLI: AsyncParsableCommand {
     static var configuration: CommandConfiguration = CommandConfiguration(
         commandName: "lclping",
         abstract: "A command-line tool from Local Connectivity Lab @UWCSE",
         subcommands: [
-            Register.self,
-            Ping.self
+            RegisterCommand.self,
+            PingCommand.self,
+            SpeedTestCommand.self,
+            MeasureCommand.self
         ],
-        defaultSubcommand: Ping.self
+        defaultSubcommand: PingCommand.self
     )
 }

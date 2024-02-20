@@ -16,8 +16,8 @@ import Foundation
 import Dispatch
 import LCLPingAuth
 
-extension PingCLI {
-    struct Ping: AsyncParsableCommand {
+extension LCLCLI {
+    struct PingCommand: AsyncParsableCommand {
         @Option(name: .shortAndLong, help: "The ping mechanism, i.e. icmp or http.")
         var type: String
         
@@ -61,7 +61,7 @@ extension PingCLI {
         
         static var configuration: CommandConfiguration = CommandConfiguration(
             commandName: "ping",
-            abstract: "Run Ping Reachability Test"
+            abstract: "Run Ping Reachability Test."
         )
         
         func validate() throws {
@@ -140,7 +140,7 @@ extension PingCLI {
                         outputFormats.insert(.default)
                     }
                     
-                    printSummary(ping.summary, for: pingType, formats: outputFormats)
+                    generatePingSummary(ping.summary, for: pingType, formats: outputFormats)
                     
                     // TODO: read credential and optionally write the data to file
                     // 1. check if credential is provided

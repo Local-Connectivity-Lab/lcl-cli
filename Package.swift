@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "lcl-ping-cli",
+    name: "lcl-cli",
     platforms: [
         .macOS(.v11)
     ],
@@ -20,7 +20,7 @@ let package = Package(
     targets: [
 
         .executableTarget(
-            name: "lcl-ping-cli",
+            name: "lcl",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "LCLPing", package: "lcl-ping"),

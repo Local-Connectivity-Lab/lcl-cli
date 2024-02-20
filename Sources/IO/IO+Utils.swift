@@ -14,23 +14,36 @@ import Foundation
 import Yams
 import LCLPing
 
-internal func printSummary(_ pingSummary: PingSummary, for type: LCLPing.PingConfiguration.PingType, formats: Set<OutputFormat>) {
+internal func generatePingSummary(_ pingSummary: PingSummary, for type: LCLPing.PingConfiguration.PingType, formats: Set<OutputFormat>) {
     for format in formats {
         switch format {
             case .json:
-            printSummaryInJSON(pingSummary: pingSummary)
+            generateSummaryInJSON(summary: pingSummary)
             case .yaml:
-            printSummaryInYAML(pingSummary: pingSummary)
+            generateSummaryInYAML(summary: pingSummary)
             case .default:
-            printSummaryDefault(pingSummary: pingSummary, type: type)
+            generatePingSummaryDefault(pingSummary: pingSummary, type: type)
         }
     }
 }
 
-internal func printSummaryInJSON(pingSummary: PingSummary) {
+internal func generateSpeedTestSummary(_ speedTestSummary: SpeedTestSummary, kind: NDT7TestConstants.Kind, formats: Set<OutputFormat>) {
+    for format in formats {
+        switch format {
+            case .json:
+            generateSummaryInJSON(summary: speedTestSummary)
+            case .yaml:
+            generateSummaryInYAML(summary: speedTestSummary)
+            case .default:
+            generateSpeedTestSummaryDefault(speedTestSummary: speedTestSummary, kind: kind)
+        }
+    }
+}
+
+private func generateSummaryInJSON(summary: Encodable) {
     let jsonEncoder = JSONEncoder()
     jsonEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    guard let result = try? jsonEncoder.encode(pingSummary) else {
+    guard let result = try? jsonEncoder.encode(summary) else {
         print("PingSummary is corrupted and unable to output in JSON format.")
         return
     }
@@ -38,17 +51,17 @@ internal func printSummaryInJSON(pingSummary: PingSummary) {
     print(String(data: result, encoding: .utf8)!)
 }
 
-internal func printSummaryInYAML(pingSummary: PingSummary) {
+private func generateSummaryInYAML(summary: Encodable) {
     let yamlEncoder = YAMLEncoder()
     yamlEncoder.options = .init(sortKeys: true)
-    guard let result = try? yamlEncoder.encode(pingSummary) else {
+    guard let result = try? yamlEncoder.encode(summary) else {
         print("PingSummary is corrupted and unable to output in YAML format.")
         return
     }
     print(result)
 }
 
-internal func printSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingConfiguration.PingType) {
+private func generatePingSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingConfiguration.PingType) {
     print("====== Ping Result ======")
     let protocolType = ProtocolType(rawValue: pingSummary.protocol)
     print("Host: \(pingSummary.ipAddress):\(pingSummary.port) [\(protocolType?.string ?? "Unknown Protocol")]")
@@ -68,4 +81,22 @@ internal func printSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingCo
     print("Average: \(pingSummary.avg.round(to: 2)) ms")
     print("Medium: \(pingSummary.median.round(to: 2)) ms")
     print("Standard Deviation: \(pingSummary.stdDev.round(to: 2)) ms")
+}
+
+private func generateSpeedTestSummaryDefault(speedTestSummary: SpeedTestSummary, kind: NDT7TestConstants.Kind) {
+    print("====== SpeedTest Result ======")
+    print("Type: \(kind)")
+    print("Total Count: \(speedTestSummary.totalCount)")
+    
+    print("====== Details ======")
+    
+    print(speedTestSummary.details.renderTextTable())
+    
+    print("======= Statistics =======")
+    print("Min: \(speedTestSummary.min.round(to: 2)) ms")
+    print("Max: \(speedTestSummary.max.round(to: 2)) ms")
+    print("Jitter: \(speedTestSummary.jitter.round(to: 2)) ms")
+    print("Average: \(speedTestSummary.avg.round(to: 2)) ms")
+    print("Medium: \(speedTestSummary.median.round(to: 2)) ms")
+    print("Standard Deviation: \(speedTestSummary.stdDev.round(to: 2)) ms")
 }
