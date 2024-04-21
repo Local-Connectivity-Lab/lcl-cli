@@ -13,7 +13,7 @@
 import Foundation
 
 extension Double {
-    
+
     /**
      Convert the value from one unit to another unit
      - Parameters:
@@ -21,11 +21,9 @@ extension Double {
         - to: the destination unit to convert to
      - Returns: the equivalent value in the destination unit
      */
-    func convertTo(from: NDT7MeasurementUnit, to: NDT7MeasurementUnit) -> Double {
-        
+    func convertTo(from: MeasurementUnit, to: MeasurementUnit) -> Double {
         var base: Double {
             switch (from, to) {
-                
             case (.Mbps, .Mbps):
                 return 1
             case (.MBps, .MBps):
@@ -36,7 +34,7 @@ extension Double {
                 return 8
             }
         }
-        
+
         return self * base
     }
 }

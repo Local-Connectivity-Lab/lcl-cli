@@ -31,7 +31,7 @@ struct SpeedTestElement: Encodable, Comparable {
     
     public let seqNum: Int
     public let speed: Double
-    public let unit: NDT7MeasurementUnit
+    public let unit: MeasurementUnit
 }
 
 extension SpeedTestElement: TextTableRepresentable {
@@ -40,6 +40,6 @@ extension SpeedTestElement: TextTableRepresentable {
     }
     
     public var tableValues: [CustomStringConvertible] {
-        return ["\(seqNum)", "\(speed.convertTo(from: .Mbps, to: unit).round(to: 2)) \(unit.toString)"]
+        return ["\(seqNum)", "\(speed.convertTo(from: .Mbps, to: unit).round(to: 2)) \(unit.string)"]
     }
 }

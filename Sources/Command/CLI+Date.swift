@@ -19,7 +19,7 @@ extension Date {
             formatter.timeZone = timeZone
         }
         formatter.dateFormat = "MM/dd/yyyy HH:mm:ss"
-        
+
         let date = Date(timeIntervalSince1970: timeInterval)
         return formatter.string(from: date)
     }

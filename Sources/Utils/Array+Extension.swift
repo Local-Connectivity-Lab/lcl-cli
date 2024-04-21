@@ -23,16 +23,16 @@ extension Array where Element == SpeedTestElement {
         let sum = reduce(0.0) { partialResult, measurementResult in
             partialResult + measurementResult.speed
         }
-        
+
         return sum / Double(count)
     }
-    
+
     /// Median of the given array of `PingResult`
     var median: Double {
         if isEmpty {
             return 0
         }
-        
+
         let sorted = sorted { $0 < $1 }
         if count % 2 == 1 {
             // odd
@@ -41,15 +41,15 @@ extension Array where Element == SpeedTestElement {
             // even - lower end will be returned
             return sorted[count / 2 - 1].speed
         }
-        
+
     }
-    
+
     /// Standard Deviation of the given array of `PingResult`
     var stdDev: Double {
         if isEmpty || count == 1 {
             return 0.0
         }
-        
+
         return sqrt(map { ($0.speed - avg) * ($0.speed - avg) }.reduce(0.0, +) / Double(count - 1))
     }
 }

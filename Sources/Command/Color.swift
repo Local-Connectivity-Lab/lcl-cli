@@ -30,7 +30,7 @@ func matchLatencyWithColor(_ latency: Double) -> String {
     default:
         color = .red
     }
-    
+
     return color + "\(latency.round(to: 2))" + .default
 }
 

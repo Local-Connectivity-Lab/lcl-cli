@@ -13,7 +13,7 @@
 import Foundation
 
 extension Double {
-    
+
     /**
      Round the double number to given decimal digits
      

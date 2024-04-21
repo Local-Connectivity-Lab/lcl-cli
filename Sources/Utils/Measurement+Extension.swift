@@ -9,17 +9,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
 import Foundation
+import LCLSpeedTest
 
 /// The network measurement unit used by the speed test framework
-enum NDT7MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
+enum MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
     
     case Mbps
     case MBps
     
     var id: Self {self}
     
-    var toString: String {
+    var string: String {
         switch (self) {
         case .Mbps:
             return "mbps"
@@ -29,12 +31,7 @@ enum NDT7MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
     }
 }
 
-extension NDT7Measurement {
-    
-    /// A boolean value indicating whether there is some non-empty data return from the test server
-    var hasValue: Bool {
-        return appInfo?.elapsedTime != nil && appInfo?.numBytes != nil
-    }
+extension MeasurementProgress {
     
     /// data in Mbps
     var defaultValueInMegaBits: Double {
@@ -57,27 +54,52 @@ extension NDT7Measurement {
         unit: the target unit to convert to
      - Returns: the value in `Double` under the specified unit measurement
      */
-    func convertTo(unit: NDT7MeasurementUnit) -> Double {
-        if let elapsedTime = appInfo?.elapsedTime, let numBytes = appInfo?.numBytes {
-            let time = Float64(elapsedTime) / 1000000
-            var speed = Float64(numBytes) / time
-            switch (unit) {
-            case .Mbps:
-                speed *= 8
-            case .MBps:
-                speed *= 1
-            }
-            
-            speed /= 1000000
-            return speed
+    func convertTo(unit: MeasurementUnit) -> Double {
+        let elapsedTime = appInfo.elapsedTime
+        let numBytes = appInfo.numBytes 
+        let time = Float64(elapsedTime) / 1000000
+        var speed = Float64(numBytes) / time
+        switch (unit) {
+        case .Mbps:
+            speed *= 8
+        case .MBps:
+            speed *= 1
         }
         
-        return .zero
+        speed /= 1000000
+        return speed
     }
+}
+
+internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: MeasurementUnit) -> SpeedTestSummary {
+    var localMin: Double = .greatestFiniteMagnitude
+    var localMax: Double = .zero
+    var consecutiveDiffSum: Double = .zero
     
-    /// empty measurement report from the test server
-    public static var empty: NDT7Measurement {
-        .init(tcpInfo: nil)
+    var measurementResults = [SpeedTestElement]()
+    
+    for i in 0..<data.count {
+        let measurement = data[i]
+        let res = measurement.convertTo(unit: unit)
+        localMin = min(localMin, res)
+        localMax = max(localMax, res)
+        if i >= 1 {
+            consecutiveDiffSum += abs(res - measurementResults.last!.speed)
+        }
+        measurementResults.append(SpeedTestElement(seqNum: i, speed: res, unit: unit))
     }
-    
+
+    let avg = measurementResults.avg
+    let stdDev = measurementResults.stdDev
+    let median = measurementResults.median
+    let jitter = data.isEmpty ? 0.0 : consecutiveDiffSum / Double(data.count)
+    return SpeedTestSummary(min: localMin, 
+                            max: localMax,
+                            avg: avg, 
+                            median: median,
+                            stdDev: stdDev,
+                            jitter: jitter, 
+                            details: measurementResults,
+                            totalCount: data.count
+                            )
 }

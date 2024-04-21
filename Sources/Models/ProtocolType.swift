@@ -16,7 +16,7 @@ enum ProtocolType: CInt {
     case v4 = 2
     case v6 = 10
     case unix = 1
-    
+
     var string: String {
         switch self {
         case.unix:

@@ -13,11 +13,11 @@
 import Foundation
 
 /// The user registration data model for login
-struct RegistrationModel: Encodable {
+struct RegistrationModel: Codable {
     private var sigmaR: String
     private var h: String
     private var R: String
-    
+
     init(sigmaR: String, h: String, R: String) {
         self.sigmaR = sigmaR
         self.h = h

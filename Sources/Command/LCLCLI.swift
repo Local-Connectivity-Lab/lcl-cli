@@ -22,7 +22,6 @@ import Darwin   // Apple platforms
 import Glibc    // GlibC Linux platforms
 #endif
 
-
 @main
 struct LCLCLI: AsyncParsableCommand {
     static var configuration: CommandConfiguration = CommandConfiguration(

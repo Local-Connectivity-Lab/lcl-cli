@@ -10,20 +10,21 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-
 import Foundation
 import ArgumentParser
 import LCLPingAuth
 
-
 extension LCLCLI {
     struct RegisterCommand: AsyncParsableCommand {
-        
+
         @Option(name: .shortAndLong, help: "Path to the SCN credential file given by the SCN administrator.")
         var filePath: String
-        
-        static let configuration = CommandConfiguration(commandName: "register", abstract: "Register with SCN server to report test data.")
-        
+
+        static let configuration = CommandConfiguration(
+                                                            commandName: "register",
+                                                            abstract: "Register with SCN server to report test data."
+                                                        )
+
         func run() async throws {
             guard let credentialData = try FileIO.default.loadFrom(fileName: filePath) else {
                 print("Fail to read content from \(filePath). Exit.")
@@ -31,7 +32,7 @@ extension LCLCLI {
             }
 
             try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl", isDirectory: true)
-            
+
             try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl/data", isDirectory: false)
             let attributes = try FileIO.default.attributesOf(name: "\(FileIO.default.home)/.lcl/data")
             var shouldOverwrite: Bool = false
@@ -53,7 +54,7 @@ extension LCLCLI {
                     }
                 }
             }
-            
+
             if !shouldOverwrite {
                 print("Registration cancelled.")
                 return
@@ -74,17 +75,20 @@ extension LCLCLI {
             let registration = RegistrationModel(sigmaR: sigma_r.hex, h: h_concat.hex, R: validationResult.R.hex)
             let registrationJson = try JSONEncoder().encode(registration)
             switch try await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
-            case .success():
+            case .success:
                 print("Registration complete!")
             case .failure(let error):
                 print("Registration failed: \(error)")
                 return
             }
-            
+
             let validationJson = try JSONEncoder().encode(validationResult)
             let privateKey = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
             let signature = try ECDSA.sign(message: validationJson, privateKey: privateKey)
-            try FileIO.default.write(data: [validationResult.R, validationResult.hPKR, validationResult.skT, signature], fileName: "\(FileIO.default.home)/.lcl/data")
+            try FileIO.default.write(
+                data: [validationResult.R, validationResult.hPKR, validationResult.skT, signature],
+                fileName: "\(FileIO.default.home)/.lcl/data"
+            )
         }
     }
 

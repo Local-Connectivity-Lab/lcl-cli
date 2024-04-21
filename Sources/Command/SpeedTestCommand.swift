@@ -12,24 +12,27 @@
 
 import Foundation
 import ArgumentParser
+import LCLSpeedTest
 
 extension LCLCLI {
     struct SpeedTestCommand: AsyncParsableCommand {
         
         @Option(name: .shortAndLong, help: "Specify the unit (MBps or mbps) for the speed test results. Default is \"mbps\"")
         var unit: String = "mbps"
+
+        @Option(name: .shortAndLong, help: "Specify the direction of the test. A test can be of three types: download, upload or downloadAndUpload")
+        var type: TestType
         
-        @Flag(help: "Export the Ping result in JSON format.")
+        @Flag(help: "Export the Speed Test result in JSON format.")
         var json: Bool = false
         
-        @Flag(help: "Export the Ping result in YAML format.")
+        @Flag(help: "Export the Speed Test result in YAML format.")
         var yaml: Bool = false
         
         static let configuration = CommandConfiguration(commandName: "speedtest", abstract: "Run speedtest using the NDT test infrastructure.")
         
-        
         func run() async throws {
-            let speedTestUnit: NDT7MeasurementUnit
+            let speedTestUnit: MeasurementUnit
             switch unit {
             case "mbps":
                 speedTestUnit = .Mbps
@@ -39,8 +42,7 @@ extension LCLCLI {
                 speedTestUnit = .Mbps
             }
             
-            
-            let speedTest = SpeedTest()
+            let speedTest = SpeedTest(testType: type)
             
             signal(SIGINT, SIG_IGN)
             let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
@@ -56,7 +58,7 @@ extension LCLCLI {
             
             let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.download, unit: speedTestUnit)
             let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.upload, unit: speedTestUnit)
-            
+                
             var outputFormats: Set<OutputFormat> = []
             if json {
                 outputFormats.insert(.json)
@@ -70,9 +72,22 @@ extension LCLCLI {
                 outputFormats.insert(.default)
             }
             
-            
-            generateSpeedTestSummary(downloadSummary, kind: .download, formats: outputFormats)
-            generateSpeedTestSummary(uploadSummary, kind: .upload, formats: outputFormats)
+            switch type {
+                
+            case .download:
+                generateSpeedTestSummary(downloadSummary, kind: .download, formats: outputFormats, unit: speedTestUnit)
+            case .upload:
+                generateSpeedTestSummary(uploadSummary, kind: .upload, formats: outputFormats, unit: speedTestUnit)
+            case .downloadAndUpload:
+                generateSpeedTestSummary(downloadSummary, kind: .download, formats: outputFormats, unit: speedTestUnit)
+                generateSpeedTestSummary(uploadSummary, kind: .upload, formats: outputFormats, unit: speedTestUnit)
+            }
         }
+    }
+}
+
+extension TestType: ExpressibleByArgument {
+    public init?(argument: String) {
+        self = TestType(rawValue: argument) ?? .download
     }
 }

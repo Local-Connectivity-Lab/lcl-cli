@@ -10,7 +10,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-
 enum OutputFormat: String {
     case json
     case yaml

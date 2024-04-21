@@ -17,23 +17,23 @@ import Foundation
 // write to file
 
 class FileIO {
-    
+
     static let `default`: FileIO = .init()
-    
+
     let fileManager = FileManager.default
-    
+
     private init() {
-        
+
     }
-    
+
     var home: URL {
         self.fileManager.homeDirectoryForCurrentUser
     }
-    
+
     func loadFrom(fileName file: String) throws -> Data? {
         return self.fileManager.contents(atPath: file)
     }
-    
+
     func readLines(fileName file: String) throws -> [Data] {
         let url = URL(fileURLWithPath: file)
         let fd = try FileHandle(forReadingFrom: url)
@@ -41,13 +41,13 @@ class FileIO {
         let newline = UInt8(ascii: "\n")
         var buffer = Data()
         var startIndex = 0
-        
+
         while true {
             let temp = fd.readData(ofLength: 1024)
             if temp.isEmpty { break } // EOF
-            
+
             buffer.append(temp)
-            
+
             var currentIndex = startIndex
             // INV: buffer[startIndex : currentIndex - 1] contains all the data before new line character
             while currentIndex != buffer.count {
@@ -61,7 +61,7 @@ class FileIO {
                 }
                 currentIndex += 1
             }
-            
+
             // Remove processed data from buffer up to the last startIndex
             if startIndex > 0 {
                 buffer.removeSubrange(0..<startIndex)
@@ -69,16 +69,15 @@ class FileIO {
                 startIndex = 0
             }
         }
-        
-        
+
         try fd.close()
         return results
     }
-    
+
     func fileExists(file fileName: String) -> Bool {
         return self.fileManager.fileExists(atPath: fileName)
     }
-    
+
     func createIfAbsent(name: String, isDirectory: Bool) throws {
         if isDirectory {
             try self.fileManager.createDirectory(atPath: name, withIntermediateDirectories: true)
@@ -87,16 +86,16 @@ class FileIO {
             self.fileManager.createFile(atPath: name, contents: nil)
         }
     }
-    
-    func attributesOf(name fileName: String) throws -> Dictionary<FileAttributeKey, Any> {
+
+    func attributesOf(name fileName: String) throws -> [FileAttributeKey: Any] {
         try self.fileManager.attributesOfItem(atPath: fileName)
     }
-    
+
     func write(data: Data, fileName file: String) throws {
         let url = URL(fileURLWithPath: file)
         try data.write(to: url, options: [.atomic])
     }
-    
+
     func write(data: [Data], fileName file: String) throws {
         let url = URL(fileURLWithPath: file)
         let fd = try FileHandle(forWritingTo: url)
@@ -105,7 +104,7 @@ class FileIO {
             try fd.write(contentsOf: d)
             try fd.write(contentsOf: "\n".data(using: .utf8)!)
         }
-        
+
         try fd.close()
     }
 }
