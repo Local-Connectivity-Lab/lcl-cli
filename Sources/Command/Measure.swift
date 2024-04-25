@@ -18,6 +18,9 @@ import LCLPingAuth
 extension LCLCLI {
     struct MeasureCommand: AsyncParsableCommand {
 
+        // TODO: need to list all available interfaces
+        // TODO: need to ask user to select the interface on which the test will be run
+
         @Option(name: .shortAndLong, help: "Path to the SCN credential to report the measurement result to SCN")
         var filePath: String?
 

@@ -22,11 +22,11 @@ internal func generatePingSummary(
 ) {
     for format in formats {
         switch format {
-            case .json:
+        case .json:
             generateSummaryInJSON(summary: pingSummary)
-            case .yaml:
+        case .yaml:
             generateSummaryInYAML(summary: pingSummary)
-            case .default:
+        case .default:
             generatePingSummaryDefault(pingSummary: pingSummary, type: type)
         }
     }

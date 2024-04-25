@@ -19,4 +19,7 @@ enum CLIError: Error {
     case serverError(Int)
     case uploadError
     case invalidURL(String)
+    case failedToReadAvailableNetworkInterfaces(Int32)
+    case failedToOpenSocket(Int32)
+    case failedToGetDeviceControlInformation(Int32)
 }

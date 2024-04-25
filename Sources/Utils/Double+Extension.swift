@@ -37,4 +37,17 @@ extension Double {
 
         return self * base
     }
+
+    /**
+     Round the double number to given decimal digits
+     
+     - Precondition: digit has to be >= 0
+     - Parameters:
+        - to: the number of decimal digits to round to
+     - Returns: the value, rounded to the given digits
+     */
+    func round(to: Int) -> Double {
+        let divisor = pow(10.0, Double(to))
+        return (self * divisor).rounded() / divisor
+    }
 }
