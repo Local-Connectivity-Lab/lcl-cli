@@ -32,7 +32,6 @@ extension LCLCLI {
             }
 
             try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl", isDirectory: true)
-
             try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl/data", isDirectory: false)
             let attributes = try FileIO.default.attributesOf(name: "\(FileIO.default.home)/.lcl/data")
             var shouldOverwrite: Bool = false
@@ -74,7 +73,7 @@ extension LCLCLI {
             let sigma_r = try ECDSA.sign(message: h_concat, privateKey: sk_t)
             let registration = RegistrationModel(sigmaR: sigma_r.hex, h: h_concat.hex, R: validationResult.R.hex)
             let registrationJson = try JSONEncoder().encode(registration)
-            switch try await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
+            switch await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
             case .success:
                 print("Registration complete!")
             case .failure(let error):

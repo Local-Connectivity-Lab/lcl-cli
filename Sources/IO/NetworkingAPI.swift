@@ -20,9 +20,9 @@ struct NetworkingAPI {
     private static var BASE_URL: String = "https://coverage.seattlecommunitynetwork.org/api"
     private static var MEDIA_TYPE: String = "application/json"
 
-    static func send(to urlString: String, using payload: Data) async throws -> Result<Void, CLIError> {
+    static func send(to urlString: String, using payload: Data) async -> Result<Void, CLIError> {
         guard let url = URL(string: urlString) else {
-            throw CLIError.invalidURL(urlString)
+            return .failure(CLIError.invalidURL(urlString))
         }
 
         do {
@@ -42,7 +42,7 @@ struct NetworkingAPI {
         return try await withCheckedThrowingContinuation { continuation in
             URLSession.shared.uploadTask(with: request, from: payload) { data, response, error in
                 if error != nil {
-                    continuation.resume(with: .failure(CLIError.uploadError))
+                    continuation.resume(with: .failure(CLIError.uploadError(error)))
                 }
 
                 let statusCode = (response as! HTTPURLResponse).statusCode
@@ -54,9 +54,50 @@ struct NetworkingAPI {
                 case (500...599):
                     continuation.resume(with: .failure(CLIError.serverError(statusCode)))
                 default:
-                    continuation.resume(with: .failure(CLIError.uploadError))
+                    continuation.resume(with: .failure(CLIError.uploadError(nil)))
                 }
+            }.resume()
+        }
+    }
+
+    static func get<T: Decodable>(from urlString: String) async -> Result<T?, CLIError> {
+        guard let url = URL(string: urlString) else {
+            return .failure(CLIError.invalidURL(urlString))
+        }
+
+        do {
+            guard let data = try await get(from: url) else {
+                return .success(nil)
             }
+
+            guard let result = try? JSONDecoder().decode(T.self, from: data) else {
+                return .failure(.decodingError)
+            }
+            return .success(result)
+        } catch {
+            return .failure(error as! CLIError)
+        }
+    }
+
+    static func get(from url: URL) async throws -> Data? {
+        return try await withCheckedThrowingContinuation { continuation in
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                if error != nil {
+                    continuation.resume(with: .failure(CLIError.fetchError(error)))
+                }
+
+                let statusCode = (response as! HTTPURLResponse).statusCode
+                switch statusCode {
+                case (200...299):
+                    continuation.resume(with: .success(data))
+                case (400...499):
+                    continuation.resume(with: .failure(CLIError.clientError(statusCode)))
+                case (500...599):
+                    continuation.resume(with: .failure(CLIError.serverError(statusCode)))
+                default:
+                    continuation.resume(with: .failure(CLIError.fetchError(nil)))
+                }
+            }.resume()
         }
     }
 }
@@ -65,6 +106,7 @@ extension NetworkingAPI {
     enum Endpoint: String {
         case register = "/register"
         case report = "/report_measurement"
+        case site = "/sites"
 
         var url: String {
             return NetworkingAPI.BASE_URL + self.rawValue

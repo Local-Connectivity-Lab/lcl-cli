@@ -17,9 +17,11 @@ enum CLIError: Error {
     case requestRedirected(Int)
     case clientError(Int)
     case serverError(Int)
-    case uploadError
+    case uploadError(Error?)
+    case fetchError(Error?)
     case invalidURL(String)
     case failedToReadAvailableNetworkInterfaces(Int32)
     case failedToOpenSocket(Int32)
     case failedToGetDeviceControlInformation(Int32)
+    case decodingError
 }

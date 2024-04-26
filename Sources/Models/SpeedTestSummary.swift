@@ -28,7 +28,7 @@ struct SpeedTestElement: Encodable, Comparable {
     static func < (lhs: SpeedTestElement, rhs: SpeedTestElement) -> Bool {
         return lhs.speed < rhs.speed
     }
-    
+
     public let seqNum: Int
     public let speed: Double
     public let unit: MeasurementUnit
@@ -38,7 +38,7 @@ extension SpeedTestElement: TextTableRepresentable {
     public static var columnHeaders: [String] {
         return ["Sequence #", "Speed"]
     }
-    
+
     public var tableValues: [CustomStringConvertible] {
         return ["\(seqNum)", "\(speed.convertTo(from: .Mbps, to: unit).round(to: 2)) \(unit.string)"]
     }

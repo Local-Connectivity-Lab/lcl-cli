@@ -32,7 +32,8 @@ struct LCLCLI: AsyncParsableCommand {
             PingCommand.self,
             SpeedTestCommand.self,
             MeasureCommand.self,
-            NetworkInterfaceCommand.self
+            NetworkInterfaceCommand.self,
+            CelluarSiteCommand.self
         ],
         defaultSubcommand: PingCommand.self
     )
