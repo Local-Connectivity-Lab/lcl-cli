@@ -13,6 +13,7 @@
 import Foundation
 import ArgumentParser
 import LCLPingAuth
+import Crypto
 
 extension LCLCLI {
     struct RegisterCommand: AsyncParsableCommand {
@@ -26,40 +27,51 @@ extension LCLCLI {
                                                         )
 
         func run() async throws {
-            guard let credentialData = try FileIO.default.loadFrom(fileName: filePath) else {
-                print("Fail to read content from \(filePath). Exit.")
-                return
+            guard let filePathURL = URL(string: filePath), let credentialCode = try FileIO.default.loadFrom(filePathURL) else {
+                throw CLIError.failedToReadFile("Fail to read content from path '\(filePath)'. Exit.")
             }
+            let homeURL = FileIO.default.home.appendingPathComponent(".lcl")
+            let skURL = homeURL.appendingPathComponent("sk")
+            let sigURL = homeURL.appendingPathComponent("sig")
+            let rURL = homeURL.appendingPathComponent("r")
+            let hpkrURL = homeURL.appendingPathComponent("hpkr")
+            let keyURL = homeURL.appendingPathComponent("key")
 
-            try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl", isDirectory: true)
-            try FileIO.default.createIfAbsent(name: "\(FileIO.default.home)/.lcl/data", isDirectory: false)
-            let attributes = try FileIO.default.attributesOf(name: "\(FileIO.default.home)/.lcl/data")
-            var shouldOverwrite: Bool = false
-            if (attributes[FileAttributeKey.size] as? Int) != 0 {
+            try FileIO.default.createIfAbsent(at: homeURL, isDirectory: true)
+
+            if FileIO.default.fileExists(skURL) ||
+                FileIO.default.fileExists(sigURL) ||
+                FileIO.default.fileExists(rURL) ||
+                FileIO.default.fileExists(hpkrURL) ||
+                FileIO.default.fileExists(keyURL) {
                 // file is NOT empty
                 var response: String?
                 while true {
-                    print("You've already have data associated with SCN. Do you want to overwrite it? [y\\N]")
+                    print("You've already have data associated with SCN. Do you want to overwrite it? [yes\\N]")
                     response = readLine()?.lowercased()
+                    var shouldExit = false
                     switch response {
                     case "yes":
-                        shouldOverwrite = true
-                        break
+                        try FileIO.default.remove(at: skURL)
+                        try FileIO.default.remove(at: hpkrURL)
+                        try FileIO.default.remove(at: rURL)
+                        try FileIO.default.remove(at: sigURL)
+
+                        shouldExit = true
                     case "n":
-                        shouldOverwrite = false
-                        break
+                        print("Registration cancelled.")
+                        return
                     default:
                         ()
+                    }
+
+                    if shouldExit {
+                        break
                     }
                 }
             }
 
-            if !shouldOverwrite {
-                print("Registration cancelled.")
-                return
-            }
-
-            let validationResult = try LCLPingAuth.validate(credential: credentialData)
+            let validationResult = try LCLPingAuth.validate(credential: credentialCode)
             var outputData = Data()
             outputData.append(validationResult.skT)
             let sk_t = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
@@ -77,18 +89,32 @@ extension LCLCLI {
             case .success:
                 print("Registration complete!")
             case .failure(let error):
-                print("Registration failed: \(error)")
-                return
+                throw CLIError.failedToRegister(error)
             }
 
             let validationJson = try JSONEncoder().encode(validationResult)
             let privateKey = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
             let signature = try ECDSA.sign(message: validationJson, privateKey: privateKey)
-            try FileIO.default.write(
-                data: [validationResult.R, validationResult.hPKR, validationResult.skT, signature],
-                fileName: "\(FileIO.default.home)/.lcl/data"
-            )
+
+            let symmetricKey = SymmetricKey(size: .bits256)
+            try encryptAndWriteData(validationResult.R, to: rURL, using: symmetricKey)
+            try encryptAndWriteData(validationResult.hPKR, to: hpkrURL, using: symmetricKey)
+            try encryptAndWriteData(validationResult.skT, to: skURL, using: symmetricKey)
+            try encryptAndWriteData(signature, to: sigURL, using: symmetricKey)
+
+            let symmetricKeyData = symmetricKey.withUnsafeBytes { pointer in
+                let ret = pointer.load(as: Data.self)
+                pointer.deallocate()
+                return ret
+            }
+
+            try FileIO.default.write(data: symmetricKeyData, to: keyURL)
+        }
+
+        private func encryptAndWriteData(_ data: Data, to fileURL: URL, using key: SymmetricKey) throws {
+            var data = try LCLPingAuth.encrypt(plainText: data, key: key)
+            try FileIO.default.write(data: data, to: fileURL)
+            data.removeAll()
         }
     }
-
 }

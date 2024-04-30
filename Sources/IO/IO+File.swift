@@ -30,12 +30,11 @@ class FileIO {
         self.fileManager.homeDirectoryForCurrentUser
     }
 
-    func loadFrom(fileName file: String) throws -> Data? {
-        return self.fileManager.contents(atPath: file)
+    func loadFrom(_ url: URL) throws -> Data? {
+        return self.fileManager.contents(atPath: url.absoluteString)
     }
 
-    func readLines(fileName file: String) throws -> [Data] {
-        let url = URL(fileURLWithPath: file)
+    func readLines(from url: URL) throws -> [Data] {
         let fd = try FileHandle(forReadingFrom: url)
         var results = [Data]()
         let newline = UInt8(ascii: "\n")
@@ -74,37 +73,32 @@ class FileIO {
         return results
     }
 
-    func fileExists(file fileName: String) -> Bool {
-        return self.fileManager.fileExists(atPath: fileName)
+    func fileExists(_ url: URL) -> Bool {
+        return self.fileManager.fileExists(atPath: url.absoluteString)
     }
 
-    func createIfAbsent(name: String, isDirectory: Bool) throws {
+    func createIfAbsent(at name: URL, isDirectory: Bool) throws {
         if isDirectory {
-            try self.fileManager.createDirectory(atPath: name, withIntermediateDirectories: true)
+            try self.fileManager.createDirectory(at: name, withIntermediateDirectories: true)
         } else {
-            // is file
-            self.fileManager.createFile(atPath: name, contents: nil)
+            // file
+            self.fileManager.createFile(atPath: name.absoluteString, contents: nil)
         }
     }
 
-    func attributesOf(name fileName: String) throws -> [FileAttributeKey: Any] {
-        try self.fileManager.attributesOfItem(atPath: fileName)
-    }
-
-    func write(data: Data, fileName file: String) throws {
-        let url = URL(fileURLWithPath: file)
-        try data.write(to: url, options: [.atomic])
-    }
-
-    func write(data: [Data], fileName file: String) throws {
-        let url = URL(fileURLWithPath: file)
-        let fd = try FileHandle(forWritingTo: url)
-        for d in data {
-            try fd.seekToEnd()
-            try fd.write(contentsOf: d)
-            try fd.write(contentsOf: "\n".data(using: .utf8)!)
+    func attributesOf(_ fileURL: URL) throws -> [FileAttributeKey: Any] {
+        if self.fileExists(fileURL) {
+            return try self.fileManager.attributesOfItem(atPath: fileURL.absoluteString)
         }
 
-        try fd.close()
+        return [FileAttributeKey.size: 0]
+    }
+
+    func write(data: Data, to fileURL: URL) throws {
+        try data.write(to: fileURL, options: [.atomic])
+    }
+
+    func remove(at fileURL: URL) throws {
+        try self.fileManager.removeItem(atPath: fileURL.absoluteString)
     }
 }

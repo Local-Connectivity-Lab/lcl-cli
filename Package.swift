@@ -16,10 +16,10 @@ let package = Package(
         .package(url: "https://github.com/johnnzhou/lcl-ping-auth.git", branch: "main"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.63.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.25.0"),
-        .package(url: "https://github.com/johnnzhou/lcl-speedtest.git", branch: "main")
+        .package(url: "https://github.com/johnnzhou/lcl-speedtest.git", branch: "main"),
+        .package(url: "https://github.com/pakLebah/ANSITerminal", from: "0.0.3")
     ],
     targets: [
-
         .executableTarget(
             name: "lcl",
             dependencies: [
@@ -33,7 +33,8 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
-                .product(name: "LCLSpeedTest", package: "lcl-speedtest")
+                .product(name: "LCLSpeedTest", package: "lcl-speedtest"),
+                .product(name: "ANSITerminal", package: "ANSITerminal")
             ],
             path: "Sources")
     ]

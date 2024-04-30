@@ -49,6 +49,12 @@ extension CellularSite: Equatable {
 
 }
 
+extension CellularSite: CustomStringConvertible {
+    var description: String {
+        return "\(self.name): \(self.address)"
+    }
+}
+
 extension CellularSite: TextTableRepresentable {
     public static var columnHeaders: [String] {
         return ["Name", "Latitude", "Longitude", "Status", "Address"]

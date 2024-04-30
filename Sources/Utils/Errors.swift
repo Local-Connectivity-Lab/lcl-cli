@@ -9,6 +9,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
 import Foundation
 
 enum CLIError: Error {
@@ -24,4 +25,8 @@ enum CLIError: Error {
     case failedToOpenSocket(Int32)
     case failedToGetDeviceControlInformation(Int32)
     case decodingError
+    case fileReadError(String)
+    case failedToRegister(Error)
+    case contentCorrupted
+    case failedToLoadContent(String)
 }
