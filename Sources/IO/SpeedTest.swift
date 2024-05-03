@@ -22,23 +22,17 @@ class SpeedTest {
     struct TestResult {
         let upload: [MeasurementProgress]
         let download: [MeasurementProgress]
-
-        init(upload: [MeasurementProgress], download: [MeasurementProgress]) {
-            self.download = download
-            self.upload = upload
-        }
     }
-    
+
     init(testType: TestType) {
         self.testType = testType
         self.uploadResults = []
         self.downloadResults = []
         self.testClient = SpeedTestClient()
     }
-    
+
     func run() async throws -> TestResult {
         self.testClient.onDownloadProgress = { measurement in
-            print("measurement is \(measurement)")
             self.downloadResults.append(measurement)
         }
         self.testClient.onUploadProgress = { measurement in
@@ -47,7 +41,7 @@ class SpeedTest {
         try await testClient.start(with: self.testType)
         return TestResult(upload: self.uploadResults, download: self.downloadResults)
     }
-    
+
     func stop() {
         do {
             try testClient.cancel()

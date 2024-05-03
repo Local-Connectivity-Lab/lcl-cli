@@ -23,4 +23,14 @@ extension Date {
         let date = Date(timeIntervalSince1970: timeInterval)
         return formatter.string(from: date)
     }
+
+    /**
+     Get the current time in ISO8601 format in String
+     - Returns: the current time in the current time zone in ISO8601 format in String
+     */
+    static func getCurrentTime() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = .current
+        return formatter.string(from: .init())
+    }
 }

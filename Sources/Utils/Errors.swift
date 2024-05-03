@@ -29,4 +29,5 @@ enum CLIError: Error {
     case failedToRegister(Error)
     case contentCorrupted
     case failedToLoadContent(String)
+    case noCellularSiteSelected
 }
