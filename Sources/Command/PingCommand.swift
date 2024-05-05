@@ -104,7 +104,11 @@ extension LCLCLI {
 
             let pingConfig = pingConfigStorage
 
+            #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
             let options = LCLPing.Options(verbose: verbose, useNative: useURLSession)
+            #else
+            let options = LCLPing.Options(verbose: verbose)
+            #endif
 
             do {
                 signal(SIGINT, SIG_IGN)

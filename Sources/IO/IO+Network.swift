@@ -35,27 +35,35 @@ internal func getAvailableInterfaces() throws -> [String: Set<String>] {
             continue
         }
 
+        #if canImport(Darwin) // macOS
         if (Int32(ifaddr.pointee.ifa_flags) & IFF_LOOPBACK) != 0 ||
             (Int32(ifaddr.pointee.ifa_flags) & IFF_UP) == 0 {
             // skip loopback and inactive interfaces
             continue
         }
+        #else
+        if (Int(ifaddr.pointee.ifa_flags) & IFF_LOOPBACK) != 0 ||
+            (Int(ifaddr.pointee.ifa_flags) & IFF_UP) == 0 {
+            // skip loopback and inactive interfaces
+            continue
+        }
+        #endif
 
-#if canImport(Darwin) // macOS
+        #if canImport(Darwin) // macOS
         let isKnownFamilyType = addr.pointee.sa_family == UInt8(AF_INET) ||
                                         addr.pointee.sa_family == UInt8(AF_INET6) ||
                                         addr.pointee.sa_family == UInt8(AF_LINK)
-#else // Linux
+        #else // Linux
         let isKnownFamilyType = addr.pointee.sa_family == UInt8(AF_INET) ||
                                 addr.pointee.sa_family == UInt8(AF_INET6) ||
                                 addr.pointee.sa_family == UInt8(AF_PACKET)
-#endif
+        #endif
 
         if isKnownFamilyType {
             var cHostName = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             let ret = getnameinfo(
                                 addr,
-                                socklen_t(addr.pointee.sa_len),
+                                (addr.pointee.sa_family == AF_INET) ? socklen_t(MemoryLayout<sockaddr_in>.size) : socklen_t(MemoryLayout<sockaddr_in6>.size),
                                 &cHostName,
                                 socklen_t(cHostName.count),
                                 nil,
