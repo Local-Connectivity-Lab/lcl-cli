@@ -15,14 +15,14 @@ import LCLSpeedTest
 
 /// The network measurement unit used by the speed test framework
 enum MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
-    
+
     case Mbps
     case MBps
-    
+
     var id: Self {self}
-    
+
     var string: String {
-        switch (self) {
+        switch self {
         case .Mbps:
             return "mbps"
         case .MBps:
@@ -32,21 +32,21 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
 }
 
 extension MeasurementProgress {
-    
+
     /// data in Mbps
     var defaultValueInMegaBits: Double {
         get {
             self.convertTo(unit: .Mbps)
         }
     }
-    
+
     /// data in MB/s
     var defaultValueInMegaBytes: Double {
         get {
             self.convertTo(unit: .MBps)
         }
     }
-    
+
     /**
      Convert the measurement data to the given unit
      
@@ -56,16 +56,16 @@ extension MeasurementProgress {
      */
     func convertTo(unit: MeasurementUnit) -> Double {
         let elapsedTime = appInfo.elapsedTime
-        let numBytes = appInfo.numBytes 
+        let numBytes = appInfo.numBytes
         let time = Float64(elapsedTime) / 1000000
         var speed = Float64(numBytes) / time
-        switch (unit) {
+        switch unit {
         case .Mbps:
             speed *= 8
         case .MBps:
             speed *= 1
         }
-        
+
         speed /= 1000000
         return speed
     }
@@ -75,9 +75,9 @@ internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: Measure
     var localMin: Double = .greatestFiniteMagnitude
     var localMax: Double = .zero
     var consecutiveDiffSum: Double = .zero
-    
+
     var measurementResults = [SpeedTestElement]()
-    
+
     for i in 0..<data.count {
         let measurement = data[i]
         let res = measurement.convertTo(unit: unit)
@@ -93,12 +93,12 @@ internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: Measure
     let stdDev = measurementResults.stdDev
     let median = measurementResults.median
     let jitter = data.isEmpty ? 0.0 : consecutiveDiffSum / Double(data.count)
-    return SpeedTestSummary(min: localMin, 
+    return SpeedTestSummary(min: localMin,
                             max: localMax,
-                            avg: avg, 
+                            avg: avg,
                             median: median,
                             stdDev: stdDev,
-                            jitter: jitter, 
+                            jitter: jitter,
                             details: measurementResults,
                             totalCount: data.count
                             )
