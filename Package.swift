@@ -27,7 +27,7 @@ let package = Package(
                 .product(name: "LCLPing", package: "lcl-ping"),
                 .product(name: "Yams", package: "Yams"),
                 .product(name: "SwiftyTextTable", package: "SwiftyTextTable"),
-                .product(name: "LCLPingAuth", package: "lcl-auth"),
+                .product(name: "LCLAuth", package: "lcl-auth"),
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),

@@ -1,5 +1,5 @@
 //
-// This source file is part of the LCLPing open source project
+// This source file is part of the LCL open source project
 //
 // Copyright (c) 2021-2024 Local Connectivity Lab and the project authors
 // Licensed under Apache License v2.0
@@ -12,7 +12,7 @@
 
 import Foundation
 import ArgumentParser
-import LCLPingAuth
+import LCLAuth
 import Crypto
 
 extension LCLCLI {
@@ -71,7 +71,7 @@ extension LCLCLI {
                 }
             }
 
-            let validationResult = try LCLPingAuth.validate(credential: credentialCode)
+            let validationResult = try LCLAuth.validate(credential: credentialCode)
             var outputData = Data()
             outputData.append(validationResult.skT)
             let sk_t = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
@@ -110,7 +110,7 @@ extension LCLCLI {
         }
 
         private func encryptAndWriteData(_ data: Data, to fileURL: URL, using key: SymmetricKey) throws {
-            var data = try LCLPingAuth.encrypt(plainText: data, key: key)
+            var data = try LCLAuth.encrypt(plainText: data, key: key)
             try FileIO.default.write(data: data, to: fileURL)
             data.removeAll()
         }
