@@ -31,7 +31,7 @@ class FileIO {
     }
 
     func loadFrom(_ url: URL) throws -> Data? {
-        return self.fileManager.contents(atPath: url.absoluteString)
+        return self.fileManager.contents(atPath: url.relativePath)
     }
 
     func readLines(from url: URL) throws -> [Data] {
@@ -74,21 +74,21 @@ class FileIO {
     }
 
     func fileExists(_ url: URL) -> Bool {
-        return self.fileManager.fileExists(atPath: url.absoluteString)
+        return self.fileManager.fileExists(atPath: url.relativePath)
     }
 
     func createIfAbsent(at name: URL, isDirectory: Bool) throws {
         if isDirectory {
-            try self.fileManager.createDirectory(at: name, withIntermediateDirectories: true)
+            try self.fileManager.createDirectory(atPath: name.relativePath, withIntermediateDirectories: true)
         } else {
             // file
-            self.fileManager.createFile(atPath: name.absoluteString, contents: nil)
+            self.fileManager.createFile(atPath: name.relativePath, contents: nil)
         }
     }
 
     func attributesOf(_ fileURL: URL) throws -> [FileAttributeKey: Any] {
         if self.fileExists(fileURL) {
-            return try self.fileManager.attributesOfItem(atPath: fileURL.absoluteString)
+            return try self.fileManager.attributesOfItem(atPath: fileURL.relativePath)
         }
 
         return [FileAttributeKey.size: 0]
@@ -99,6 +99,6 @@ class FileIO {
     }
 
     func remove(at fileURL: URL) throws {
-        try self.fileManager.removeItem(atPath: fileURL.absoluteString)
+        try self.fileManager.removeItem(atPath: fileURL.relativePath)
     }
 }

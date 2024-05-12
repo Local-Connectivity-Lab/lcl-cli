@@ -103,9 +103,7 @@ extension LCLCLI {
             try encryptAndWriteData(signature, to: sigURL, using: symmetricKey)
 
             let symmetricKeyData = symmetricKey.withUnsafeBytes { pointer in
-                let ret = pointer.load(as: Data.self)
-                pointer.deallocate()
-                return ret
+                return Data(pointer)
             }
 
             try FileIO.default.write(data: symmetricKeyData, to: keyURL)
