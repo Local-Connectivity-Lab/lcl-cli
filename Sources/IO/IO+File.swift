@@ -99,6 +99,8 @@ class FileIO {
     }
 
     func remove(at fileURL: URL) throws {
-        try self.fileManager.removeItem(atPath: fileURL.relativePath)
+        if fileExists(fileURL) {
+            try self.fileManager.removeItem(atPath: fileURL.relativePath)
+        }
     }
 }

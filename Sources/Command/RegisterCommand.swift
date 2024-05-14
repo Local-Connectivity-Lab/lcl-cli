@@ -71,6 +71,8 @@ extension LCLCLI {
                 }
             }
 
+            let encoder: JSONEncoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
             let validationResult = try LCLAuth.validate(credential: credentialCode)
             var outputData = Data()
             outputData.append(validationResult.skT)
@@ -84,7 +86,7 @@ extension LCLCLI {
             let h_concat = Data(outputData)
             let sigma_r = try ECDSA.sign(message: h_concat, privateKey: sk_t)
             let registration = RegistrationModel(sigmaR: sigma_r.hex, h: h_concat.hex, R: validationResult.R.hex)
-            let registrationJson = try JSONEncoder().encode(registration)
+            let registrationJson = try encoder.encode(registration)
             switch await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
             case .success:
                 print("Registration complete!")
@@ -92,7 +94,7 @@ extension LCLCLI {
                 throw CLIError.failedToRegister(error)
             }
 
-            let validationJson = try JSONEncoder().encode(validationResult)
+            let validationJson = try encoder.encode(validationResult)
             let privateKey = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
             let signature = try ECDSA.sign(message: validationJson, privateKey: privateKey)
 
@@ -110,9 +112,9 @@ extension LCLCLI {
         }
 
         private func encryptAndWriteData(_ data: Data, to fileURL: URL, using key: SymmetricKey) throws {
-            var data = try LCLAuth.encrypt(plainText: data, key: key)
-            try FileIO.default.write(data: data, to: fileURL)
-            data.removeAll()
+            var encrypted = try LCLAuth.encrypt(plainText: data, key: key)
+            try FileIO.default.write(data: encrypted, to: fileURL)
+            encrypted.removeAll()
         }
     }
 }
