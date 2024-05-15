@@ -4,3 +4,4 @@ excluded:
   - .build
   - .swiftpm
   - .vscode
+  - .git
