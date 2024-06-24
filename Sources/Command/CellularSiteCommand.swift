@@ -16,9 +16,9 @@ import ArgumentParser
 extension LCLCLI {
     struct CelluarSiteCommand: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-                                                            commandName: "cellular-sites",
-                                                            abstract: "Get info on SCN cellular sites"
-                                                        )
+            commandName: "cellular-sites",
+            abstract: "Get info on SCN cellular sites"
+        )
         func run() async throws {
             let result: Result<[CellularSite]?, CLIError> = await NetworkingAPI
                                                                 .get(from: NetworkingAPI.Endpoint.site.url)

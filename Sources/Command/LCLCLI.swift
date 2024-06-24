@@ -25,7 +25,7 @@ import Glibc    // GlibC Linux platforms
 @main
 struct LCLCLI: AsyncParsableCommand {
     static var configuration: CommandConfiguration = CommandConfiguration(
-        commandName: "lclping",
+        commandName: "lcl",
         abstract: "A command-line tool from Local Connectivity Lab @UWCSE",
         subcommands: [
             RegisterCommand.self,
@@ -34,7 +34,6 @@ struct LCLCLI: AsyncParsableCommand {
             MeasureCommand.self,
             NetworkInterfaceCommand.self,
             CelluarSiteCommand.self
-        ],
-        defaultSubcommand: PingCommand.self
+        ]
     )
 }

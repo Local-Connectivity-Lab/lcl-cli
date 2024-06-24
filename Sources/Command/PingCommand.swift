@@ -18,40 +18,33 @@ import LCLAuth
 
 extension LCLCLI {
     struct PingCommand: AsyncParsableCommand {
-        @Option(name: .shortAndLong, help: "The ping mechanism, i.e. icmp or http.")
-        var type: String
+        static var configuration: CommandConfiguration = CommandConfiguration(
+            commandName: "ping",
+            abstract: "Run Ping Latency and Reachability Test.",
+            subcommands: [ICMPCommand.self, HTTPCommand.self]
+        )
+    }
+}
 
+extension LCLCLI {
+    struct ICMPCommand: ParsableCommand {
         @Option(name: .shortAndLong, help: "The host that the ping request will be sent to.")
         var host: String
 
         @Option(name: .shortAndLong, help: "The port on the host to connec to, ranging from 0 to 65535")
-        var port: UInt16?
+        var port: Int?
 
         @Option(name: .shortAndLong, help: "Specify the number of times LCLPing runs the test. The number has to be greater than 0. Default is 10.")
-        var count: UInt16?
+        var count: UInt64?
 
-        @Option(name: .shortAndLong, help: "The wait time, in second, between sending consecutive packet. Default is 1 second.")
-        var interval: TimeInterval?
+        @Option(name: .shortAndLong, help: "The wait time, in milliseconds, between sending consecutive packet. Default is 1000 ms.")
+        var interval: UInt64?
 
-        @Option(name: .long, help: "Time-to-live for outgoing packets. The number has to be greater than 0. Default is 64.")
-        var ttl: UInt16?
+        @Option(name: .long, help: "Time-to-live for outgoing packets. The number has to be greater than 0. Default is 64. This option applies to ICMP only.")
+        var ttl: UInt8?
 
-        @Option(name: .long, help: "Time, in second, to wait for a reply for each packet sent. Default is 1 second.")
-        var timeout: TimeInterval?
-
-        @Flag(name: .long, help: "Use Server-Timing in HTTP header to calculate latency. Server should support Server-Timing in HTTP response.")
-        var useServerTiming: Bool = false
-
-        @Option(name: .shortAndLong, help: "The path to the file where SCN credential is stored to report test metrics to SCN server.")
-        var upload: String?
-
-        @Flag(help: "Include extra information in the output.")
-        var verbose: Bool = false
-
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-        @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. If type is set to icmp, then this flag has no effect.")
-        var useURLSession: Bool = false
-#endif
+        @Option(name: .long, help: "Time, in milliseconds, to wait for a reply for each packet sent. Default is 1000 ms.")
+        var timeout: UInt64?
 
         @Flag(help: "Export the Ping result in JSON format.")
         var json: Bool = false
@@ -60,137 +53,169 @@ extension LCLCLI {
         var yaml: Bool = false
 
         static var configuration: CommandConfiguration = CommandConfiguration(
-            commandName: "ping",
-            abstract: "Run Ping Reachability Test."
+            commandName: "icmp",
+            abstract: "Run ICMP Ping Latency and Reachability Test."
         )
 
-        func validate() throws {
-            if !["icmp", "http"].contains(type) {
-                throw CLIError.invalidPingType
-            }
-        }
-
-        func run() async throws {
-            let pingType: LCLPing.PingConfiguration.PingType
-            switch type {
-            case "icmp":
-                pingType = .icmp
-            case "http":
-                var httpConfig = LCLPing.PingConfiguration.HTTPOptions()
-                httpConfig.useServerTiming = useServerTiming
-                pingType = .http(httpConfig)
-            default:
-                fatalError("Unknown type \(type). Must be either 'icmp' or 'http'.")
-            }
-
-            let endpoint = LCLPing.PingConfiguration.IP.ipv4(host, port == nil ? nil : port!)
-
-            var pingConfigStorage = LCLPing.PingConfiguration(type: pingType, endpoint: endpoint)
-            if let count = count {
-                pingConfigStorage.count = count
-            }
-
-            if let interval = interval {
-                pingConfigStorage.interval = interval
-            }
-
-            if let ttl = ttl {
-                pingConfigStorage.timeToLive = UInt16(ttl)
-            }
-
-            if let timeout = timeout {
-                pingConfigStorage.timeout = timeout
-            }
-
-            let pingConfig = pingConfigStorage
-
-            #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-            let options = LCLPing.Options(verbose: verbose, useNative: useURLSession)
-            #else
-            let options = LCLPing.Options(verbose: verbose)
-            #endif
-
+        func run() throws {
             do {
+                var config = try ICMPPingClient.Configuration(endpoint: .ipv4(host, port ?? 0))
+                if let count = count {
+                    config.count = Int(count)
+                }
+                if let interval = interval {
+                    config.interval = .milliseconds(Int64(interval))
+                }
+                if let ttl = ttl {
+                    config.timeToLive = ttl
+                }
+                if let timeout = timeout {
+                    config.timeout = .milliseconds(Int64(timeout))
+                }
+
+                var outputFormats: Set<OutputFormat> = []
+                if json {
+                    outputFormats.insert(.json)
+                }
+
+                if yaml {
+                    outputFormats.insert(.yaml)
+                }
+
+                if outputFormats.isEmpty {
+                    outputFormats.insert(.default)
+                }
+
+                let client = ICMPPingClient(configuration: config)
+
                 signal(SIGINT, SIG_IGN)
-
-                var ping = LCLPing(options: options)
-
                 // handle ctrl-c signal
                 let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
 
                 stopSignal.setEventHandler {
-                    print("Exit from Ping Test")
-                    ping.stop()
+                    print("Exit from ICMP Ping Test.")
+                    client.cancel()
                     return
                 }
-
                 stopSignal.resume()
 
-                try await ping.start(pingConfiguration: pingConfig)
-                switch ping.status {
-                case .error, .ready, .running:
-                    print("LCLPing encountered some error while running tests")
-                case .stopped, .finished:
-                    var outputFormats: Set<OutputFormat> = []
-                    if json {
-                        outputFormats.insert(.json)
-                    }
-
-                    if yaml {
-                        outputFormats.insert(.yaml)
-                    }
-
-                    if outputFormats.isEmpty {
-                        outputFormats.insert(.default)
-                    }
-
-                    generatePingSummary(ping.summary, for: pingType, formats: outputFormats)
-
-                    // TODO: read credential and optionally write the data to file
-                    // 1. check if credential is provided
-                    // 2. If not, skip reporting
-                    // 3. If yes, check if corresponding keys have been generated (in .lcl folder in the user's home directory)
-                    // 4. If not, generate the keys by calling method in the Auth module. Then save the data to the .lcl folder
-                    // 5. If yes, read the keys file and verify against the provided credential to see if data is corrupted
-                    // 6. If all checks pass, use the credential to upload the data to the backend server
-
-                    //                if let credentialDirectory = upload {
-                    //
-                    //                    if !FileIO.default.fileExists(file: "\(FileIO.default.home)/.lcl/data") {
-                    //                        print("Please use --register to register your credential with SCN first.")
-                    //                        return
-                    //                    }
-                    //
-                    //                    let credential = try FileIO.default.loadFrom(fileName: credentialDirectory)
-                    //                    let registeredData = try FileIO.default.readLines(fileName: "\(FileIO.default.home)/.lcl/data")
-                    //                    if (registeredData.count != 4) {
-                    //                        print("Invalid registration data. Please contact SCN administrator or re-register.")
-                    //                        return
-                    //                    }
-                    //                    let R = registeredData[0]
-                    //                    let hPKR = registeredData[1]
-                    //                    let skT = registeredData[2]
-                    //                    let privateKey = try ECDSA.deserializePrivateKey(raw: skT)
-                    //                    let publicKey = ECDSA.derivePublicKey(from: privateKey)
-                    //                    let signature = registeredData[3]
-                    //
-                    //                    if (ECDSA.verify(message: , signature: signature, publicKey: publicKey)) {
-                    //
-                    //                    }
-                    //
-                    //
-                    //
-                    //
-                    //
-                    //
-                    //                    // TODO: stop and alert user to use --register first before proceed
-                    //
-                    //
-                    //                }
-                }
+                let summary = try client.start().wait()
+                generatePingSummary(summary, for: .icmp, formats: outputFormats)
+                stopSignal.cancel()
             } catch {
-                print("LCLPing encountered some error while running tests: \(error)")
+                print("Error: \(error)")
             }
+        }
+    }
+
+    struct HTTPCommand: ParsableCommand {
+
+        @Option(name: .shortAndLong, help: "The URL that the HTTP request will be sent to.")
+        var url: String
+
+        @Option(name: .shortAndLong, help: "Specify the number of times the ping test runs. The number has to be greater than 0. Default is 10.")
+        var count: UInt64?
+
+        @Option(name: .long, help: "Time, in milliseconds, that the HTTP client will wait when connecting to the host. Default is 5000 ms.")
+        var connectionTimeout: UInt64?
+
+        @Option(name: .long, help: "Time, in milliseconds, HTTP will wait for the response from the host. Default is 1000 ms.")
+        var readTimeout: UInt64?
+
+        @Option(name: .long, help: "HTTP Headers to be included in the request. Use comma to separate <Key>:<Value>.")
+        var headers: String?
+
+        @Flag(name: .long, help: "Use Server-Timing in HTTP header to calculate latency. Server should support Server-Timing in HTTP response. Otherwise, a default 15ms will be taken into consideration.")
+        var useServerTiming: Bool = false
+
+        @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. This flag has no effect on Linux platform.")
+        var useURLSession: Bool = false
+
+        @Flag(help: "Export the Ping result in JSON format.")
+        var json: Bool = false
+
+        @Flag(help: "Export the Ping result in YAML format.")
+        var yaml: Bool = false
+
+        static var configuration: CommandConfiguration = CommandConfiguration(
+            commandName: "http",
+            abstract: "Run ICMP Ping Latency and Reachability Test."
+        )
+
+        func run() throws {
+            var config = try HTTPPingClient.Configuration(url: url)
+            if let count = count {
+                config.count = Int(count)
+            }
+
+            if let connectionTimeout = connectionTimeout {
+                config.connectionTimeout = .milliseconds(Int64(connectionTimeout))
+            }
+            if let readTimeout = readTimeout {
+                config.readTimeout = .milliseconds(Int64(readTimeout))
+            }
+
+            if let headers = headers {
+                var httpHeaders = [String: String]()
+                headers.split(separator: ",").forEach { element in
+                    let pair = element.split(separator: ":")
+                    if pair.count == 2 {
+                        httpHeaders.updateValue(String(pair[1]), forKey: String(pair[0]))
+                    }
+                }
+                config.headers = httpHeaders
+            }
+
+            #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+            config.useURLSession = useURLSession
+            #endif
+
+            config.useServerTiming = useServerTiming
+
+            var outputFormats: Set<OutputFormat> = []
+            if json {
+                outputFormats.insert(.json)
+            }
+
+            if yaml {
+                outputFormats.insert(.yaml)
+            }
+
+            if outputFormats.isEmpty {
+                outputFormats.insert(.default)
+            }
+
+            let client = HTTPPingClient(configuration: config)
+
+            signal(SIGINT, SIG_IGN)
+
+            // handle ctrl-c signal
+            let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+
+            stopSignal.setEventHandler {
+                print("Exit from ICMP Ping Test.")
+                client.cancel()
+                return
+            }
+
+            stopSignal.resume()
+
+            let summary = try client.start().wait()
+            generatePingSummary(summary, for: .http, formats: outputFormats)
+            stopSignal.cancel()
+        }
+    }
+}
+
+extension LCLPing.PingType: ExpressibleByArgument {
+    public init?(argument: String) {
+        switch argument {
+        case "icmp":
+            self = .icmp
+        case "http":
+            self = .http
+        default:
+            self = .icmp
         }
     }
 }

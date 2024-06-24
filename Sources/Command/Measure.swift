@@ -22,7 +22,10 @@ extension LCLCLI {
         @Option(name: .shortAndLong, help: "Show datapoint on SCN's public visualization. Your contribution will help others better understand our coverage.")
         var showData: Bool = false
 
-        static let configuration = CommandConfiguration(commandName: "measure", abstract: "Run SCN test suite and optionally report the measurement result to SCN.")
+        static let configuration = CommandConfiguration(
+            commandName: "measure",
+            abstract: "Run SCN test suite and optionally report the measurement result to SCN."
+        )
 
         func run() async throws {
             let encoder: JSONEncoder = JSONEncoder()
@@ -70,19 +73,17 @@ extension LCLCLI {
                 throw CLIError.contentCorrupted
             }
 
-            let pingOptions = LCLPing.Options()
-            let pingConfig = LCLPing.PingConfiguration(type: .icmp, endpoint: .ipv4("google.com", 0))
+            let pingConfig = try ICMPPingClient.Configuration(endpoint: .ipv4("google.com", 0))
             let outputFormats: Set<OutputFormat> = [.default]
 
-            var ping = LCLPing(options: pingOptions)
+            let client = ICMPPingClient(configuration: pingConfig)
             let speedTest = SpeedTest(testType: .downloadAndUpload)
 
             signal(SIGINT, SIG_IGN)
             let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
             stopSignal.setEventHandler {
                 print("Exit from SCN Measurement Test")
-                // picker.exit()
-                ping.stop()
+                client.cancel()
                 speedTest.stop()
                 return
             }
@@ -95,21 +96,13 @@ extension LCLCLI {
 
             let deviceId = UUID().uuidString
 
-            var isPingComplete: Bool = false
-            try await ping.start(pingConfiguration: pingConfig)
-            switch ping.status {
-            case .error, .ready, .running:
-                print("Ping Test encountered some error while running tests")
-            case .stopped, .finished:
-                isPingComplete = true
-            }
+            let summary = try await client.start().get()
 
             let speedTestResults = try await speedTest.run()
             let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.download, unit: .Mbps)
             let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.upload, unit: .Mbps)
-            if isPingComplete {
-                generatePingSummary(ping.summary, for: .icmp, formats: outputFormats)
-            }
+
+            generatePingSummary(summary, for: .icmp, formats: outputFormats)
             generateSpeedTestSummary(downloadSummary, kind: .download, formats: outputFormats, unit: .Mbps)
             generateSpeedTestSummary(uploadSummary, kind: .upload, formats: outputFormats, unit: .Mbps)
 
@@ -123,10 +116,10 @@ extension LCLCLI {
                     uploadSpeed: uploadSummary.avg,
                     latitude: selectedSite.latitude,
                     longitude: selectedSite.longitude,
-                    packetLoss: Double(ping.summary.timeout.count) / Double(ping.summary.totalCount),
-                    ping: ping.summary.avg,
+                    packetLoss: Double(summary.timeout.count) / Double(summary.totalCount),
+                    ping: summary.avg,
                     timestamp: Date.getCurrentTime(),
-                    jitter: ping.summary.jitter
+                    jitter: summary.jitter
                 )
                 let serialized = try encoder.encode(report)
                 let sig_m = try ECDSA.sign(message: serialized, privateKey: ECDSA.deserializePrivateKey(raw: skData))

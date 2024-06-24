@@ -17,7 +17,7 @@ import LCLSpeedTest
 
 internal func generatePingSummary(
     _ pingSummary: PingSummary,
-    for type: LCLPing.PingConfiguration.PingType,
+    for type: LCLPing.PingType,
     formats: Set<OutputFormat>
 ) {
     for format in formats {
@@ -71,7 +71,7 @@ private func generateSummaryInYAML(summary: Encodable) {
     print(result)
 }
 
-private func generatePingSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingConfiguration.PingType) {
+private func generatePingSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingType) {
     print("====== Ping Result ======")
     let protocolType = ProtocolType(rawValue: pingSummary.protocol)
     print("Host: \(pingSummary.ipAddress):\(pingSummary.port) [\(protocolType?.string ?? "Unknown Protocol")]")
