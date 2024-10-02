@@ -131,6 +131,9 @@ extension LCLCLI {
         @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. This flag has no effect on Linux platform.")
         var useURLSession: Bool = false
 
+        @Option(name: .long, help: "Specify the device name to which the data will be sent.")
+        var deviceName: String?
+
         @Flag(help: "Export the Ping result in JSON format.")
         var json: Bool = false
 
@@ -143,7 +146,7 @@ extension LCLCLI {
         )
 
         func run() throws {
-            var config = try HTTPPingClient.Configuration(url: url)
+            var config = try HTTPPingClient.Configuration(url: url, deviceName: deviceName)
             if let count = count {
                 config.count = Int(count)
             }

@@ -12,7 +12,7 @@
 
 import Foundation
 import ArgumentParser
-import LCLSpeedTest
+import LCLSpeedtest
 
 extension LCLCLI {
     struct SpeedTestCommand: AsyncParsableCommand {
@@ -22,6 +22,9 @@ extension LCLCLI {
 
         @Option(name: .shortAndLong, help: "Specify the direction of the test. A test can be of three types: download, upload or downloadAndUpload")
         var type: TestType
+
+        @Option(name: .long, help: "Specify the device name to which the data will be sent.")
+        var deviceName: String?
 
         @Flag(help: "Export the Speed Test result in JSON format.")
         var json: Bool = false
@@ -47,17 +50,17 @@ extension LCLCLI {
             signal(SIGINT, SIG_IGN)
             let stopSignal = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
             stopSignal.setEventHandler {
-                print("Exit from Speed Test")
+                print("Exit from Speedtest")
                 speedTest.stop()
                 return
             }
 
             stopSignal.resume()
 
-            let speedTestResults = try await speedTest.run()
+            let speedTestResults = try await speedTest.run(deviceName: deviceName)
 
-            let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.download, unit: speedTestUnit)
-            let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.upload, unit: speedTestUnit)
+            let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.downloadSpeed, tcpInfos: speedTestResults.downloadTCPMeasurement, for: .download, unit: speedTestUnit)
+            let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.uploadSpeed, tcpInfos: speedTestResults.uploadTCPMeasurement, for: .upload, unit: speedTestUnit)
 
             var outputFormats: Set<OutputFormat> = []
             if json {

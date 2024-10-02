@@ -13,7 +13,7 @@
 import Foundation
 import Yams
 import LCLPing
-import LCLSpeedTest
+import LCLSpeedtest
 
 internal func generatePingSummary(
     _ pingSummary: PingSummary,
@@ -113,4 +113,7 @@ private func generateSpeedTestSummaryDefault(
     print("Average: \(speedTestSummary.avg.round(to: 2)) \(unit.string)")
     print("Medium: \(speedTestSummary.median.round(to: 2)) \(unit.string)")
     print("Standard Deviation: \(speedTestSummary.stdDev.round(to: 2)) \(unit.string)")
+    print("Latency: \(speedTestSummary.latency.round(to: 2)) ms")
+    print("Latency Variance: \(speedTestSummary.latencyVariance.round(to: 2)) ms")
+    print("Retransmit Rate: \((speedTestSummary.retransmit * 100.0).round(to: 2)) %")
 }

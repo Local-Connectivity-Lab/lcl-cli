@@ -15,9 +15,13 @@ import ArgumentParser
 import LCLPing
 import LCLAuth
 import Crypto
+import LCLSpeedtest
 
 extension LCLCLI {
     struct MeasureCommand: AsyncParsableCommand {
+
+        @Option(name: .long, help: "Specify the device name to which the data will be sent.")
+        var deviceName: String?
 
         @Option(name: .shortAndLong, help: "Show datapoint on SCN's public visualization. Your contribution will help others better understand our coverage.")
         var showData: Bool = false
@@ -36,6 +40,7 @@ extension LCLCLI {
             let result: Result<[CellularSite]?, CLIError> = await NetworkingAPI.get(from: NetworkingAPI.Endpoint.site.url)
             switch result {
             case .failure(let error):
+
                 throw error
             case .success(let cs):
                 if let s = cs {
@@ -47,24 +52,16 @@ extension LCLCLI {
             }
             var picker = Picker<CellularSite>(title: "Choose the cellular site you are currently at.", options: sites)
 
-            let homeURL = FileIO.default.home.appendingPathComponent(".lcl")
+            let homeURL = FileIO.default.home.appendingPathComponent(Constants.cliDirectory)
             let skURL = homeURL.appendingPathComponent("sk")
             let sigURL = homeURL.appendingPathComponent("sig")
             let rURL = homeURL.appendingPathComponent("r")
             let hpkrURL = homeURL.appendingPathComponent("hpkr")
-            let keyURL = homeURL.appendingPathComponent("key")
-            let keyData = try loadData(keyURL)
 
-            let symmetricKeyRecovered = SymmetricKey(data: keyData)
-
-            let skDataEncrypted = try loadData(skURL)
-            let skData = try decrypt(cipher: skDataEncrypted, key: symmetricKeyRecovered)
-            let sigDataEncrypted = try loadData(sigURL)
-            let sigData = try decrypt(cipher: sigDataEncrypted, key: symmetricKeyRecovered)
-            let rDataEncrypted = try loadData(rURL)
-            let rData = try decrypt(cipher: rDataEncrypted, key: symmetricKeyRecovered)
-            let hpkrDataEncrypted = try loadData(hpkrURL)
-            let hpkrData = try decrypt(cipher: hpkrDataEncrypted, key: symmetricKeyRecovered)
+            let skData = try loadData(skURL)
+            let sigData = try loadData(sigURL)
+            let rData = try loadData(rURL)
+            let hpkrData = try loadData(hpkrURL)
             let validationResultJSON = try encoder.encode(ValidationResult(R: rData, skT: skData, hPKR: hpkrData))
 
             let ecPrivateKey = try ECDSA.deserializePrivateKey(raw: skData)
@@ -73,7 +70,7 @@ extension LCLCLI {
                 throw CLIError.contentCorrupted
             }
 
-            let pingConfig = try ICMPPingClient.Configuration(endpoint: .ipv4("google.com", 0))
+            let pingConfig = try ICMPPingClient.Configuration(endpoint: .ipv4("google.com", 0), deviceName: deviceName)
             let outputFormats: Set<OutputFormat> = [.default]
 
             let client = ICMPPingClient(configuration: pingConfig)
@@ -98,9 +95,12 @@ extension LCLCLI {
 
             let summary = try await client.start().get()
 
-            let speedTestResults = try await speedTest.run()
-            let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.download, unit: .Mbps)
-            let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.upload, unit: .Mbps)
+            let speedTestResults = try await speedTest.run(deviceName: deviceName)
+            let downloadMeasurement = computeLatencyAndRetransmission(speedTestResults.downloadTCPMeasurement, for: .download)
+            let uploadMeasurement = computeLatencyAndRetransmission(speedTestResults.uploadTCPMeasurement, for: .upload)
+
+            let downloadSummary = prepareSpeedTestSummary(data: speedTestResults.downloadSpeed, tcpInfos: speedTestResults.downloadTCPMeasurement, for: .download, unit: .Mbps)
+            let uploadSummary = prepareSpeedTestSummary(data: speedTestResults.uploadSpeed, tcpInfos: speedTestResults.uploadTCPMeasurement, for: .upload, unit: .Mbps)
 
             generatePingSummary(summary, for: .icmp, formats: outputFormats)
             generateSpeedTestSummary(downloadSummary, kind: .download, formats: outputFormats, unit: .Mbps)
@@ -116,10 +116,10 @@ extension LCLCLI {
                     uploadSpeed: uploadSummary.avg,
                     latitude: selectedSite.latitude,
                     longitude: selectedSite.longitude,
-                    packetLoss: Double(summary.timeout.count) / Double(summary.totalCount),
-                    ping: summary.avg,
+                    packetLoss: (downloadMeasurement.retransmit + uploadMeasurement.retransmit) / 2,
+                    ping: (downloadMeasurement.latency + uploadMeasurement.latency) / 2,
                     timestamp: Date.getCurrentTime(),
-                    jitter: summary.jitter
+                    jitter: (downloadMeasurement.variance + uploadMeasurement.variance) / 2
                 )
                 let serialized = try encoder.encode(report)
                 let sig_m = try ECDSA.sign(message: serialized, privateKey: ECDSA.deserializePrivateKey(raw: skData))

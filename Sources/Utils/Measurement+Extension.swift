@@ -11,7 +11,7 @@
 //
 
 import Foundation
-import LCLSpeedTest
+import LCLSpeedtest
 
 /// The network measurement unit used by the speed test framework
 enum MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
@@ -24,7 +24,7 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Encodable {
     var string: String {
         switch self {
         case .Mbps:
-            return "mbps"
+            return "Mbit/s"
         case .MBps:
             return "MB/s"
         }
@@ -71,7 +71,7 @@ extension MeasurementProgress {
     }
 }
 
-internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: MeasurementUnit) -> SpeedTestSummary {
+internal func prepareSpeedTestSummary(data: [MeasurementProgress], tcpInfos: [TCPInfo], for: TestDirection, unit: MeasurementUnit) -> SpeedTestSummary {
     var localMin: Double = .greatestFiniteMagnitude
     var localMax: Double = .zero
     var consecutiveDiffSum: Double = .zero
@@ -92,6 +92,9 @@ internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: Measure
     let avg = measurementResults.avg
     let stdDev = measurementResults.stdDev
     let median = measurementResults.median
+
+    let tcpMeasurement = computeLatencyAndRetransmission(tcpInfos, for: `for`)
+
     let jitter = data.isEmpty ? 0.0 : consecutiveDiffSum / Double(data.count)
     return SpeedTestSummary(min: localMin,
                             max: localMax,
@@ -100,6 +103,32 @@ internal func prepareSpeedTestSummary(data: [MeasurementProgress], unit: Measure
                             stdDev: stdDev,
                             jitter: jitter,
                             details: measurementResults,
+                            latency: tcpMeasurement.latency,
+                            latencyVariance: tcpMeasurement.variance,
+                            retransmit: tcpMeasurement.retransmit,
                             totalCount: data.count
                             )
+}
+
+internal func computeLatencyAndRetransmission(_ tcpInfos: [TCPInfo], for direction: TestDirection) -> (latency: Double, variance: Double, retransmit: Double) {
+    if tcpInfos.isEmpty {
+        return (0, 0, 0)
+    }
+    var latency: Int64 = 0
+    var latencyVariance: Int64 = 0
+    var retransmit: Int64 = 0
+    var total: Int64 = 0
+    tcpInfos.forEach { tcpInfo in
+        latency += tcpInfo.rtt ?? 0
+        latencyVariance += tcpInfo.rttVar ?? 0
+        retransmit += tcpInfo.bytesRetrans ?? 0
+        switch direction {
+        case .download:
+            total += tcpInfo.bytesSent ?? 0
+        case .upload:
+            total += tcpInfo.bytesReceived ?? 0
+        }
+    }
+
+    return (Double(latency / 1000) / Double(tcpInfos.count), Double(latencyVariance / 1000) / Double(tcpInfos.count), Double(retransmit) / Double(total))
 }

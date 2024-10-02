@@ -21,6 +21,11 @@ struct SpeedTestSummary: Encodable {
     public let stdDev: Double
     public let jitter: Double
     public let details: [SpeedTestElement] // in mbps
+
+    public let latency: Double
+    public let latencyVariance: Double
+    public let retransmit: Double
+
     public let totalCount: Int
 }
 

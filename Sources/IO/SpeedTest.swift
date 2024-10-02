@@ -11,35 +11,59 @@
 //
 
 import Foundation
-import LCLSpeedTest
+import LCLSpeedtest
 
 class SpeedTest {
     private let testType: TestType
-    private var uploadResults: [MeasurementProgress]
-    private var downloadResults: [MeasurementProgress]
+    private var uploadSpeed: [MeasurementProgress]
+    private var downloadSpeed: [MeasurementProgress]
+    private var uploadTCPMeasurement: [TCPInfo]
+    private var downloadTCPMeasurement: [TCPInfo]
+
     private var testClient: SpeedTestClient
 
     struct TestResult {
-        let upload: [MeasurementProgress]
-        let download: [MeasurementProgress]
+        let uploadSpeed: [MeasurementProgress]
+        let downloadSpeed: [MeasurementProgress]
+        let uploadTCPMeasurement: [TCPInfo]
+        let downloadTCPMeasurement: [TCPInfo]
     }
 
     init(testType: TestType) {
         self.testType = testType
-        self.uploadResults = []
-        self.downloadResults = []
+        self.uploadSpeed = []
+        self.downloadSpeed = []
+        self.uploadTCPMeasurement = []
+        self.downloadTCPMeasurement = []
         self.testClient = SpeedTestClient()
     }
 
-    func run() async throws -> TestResult {
-        self.testClient.onDownloadProgress = { measurement in
-            self.downloadResults.append(measurement)
+    func run(deviceName: String? = nil) async throws -> TestResult {
+        self.testClient.onDownloadProgress = { progress in
+            self.downloadSpeed.append(progress)
         }
-        self.testClient.onUploadProgress = { measurement in
-            self.uploadResults.append(measurement)
+        self.testClient.onDownloadMeasurement = { measurement in
+            guard let tcpInfo = measurement.tcpInfo else {
+                return
+            }
+            self.downloadTCPMeasurement.append(tcpInfo)
         }
-        try await testClient.start(with: self.testType)
-        return TestResult(upload: self.uploadResults, download: self.downloadResults)
+        self.testClient.onUploadProgress = { progress in
+            self.uploadSpeed.append(progress)
+        }
+        self.testClient.onUploadMeasurement = { measurement in
+            guard let tcpInfo = measurement.tcpInfo else {
+                return
+            }
+            self.downloadTCPMeasurement.append(tcpInfo)
+        }
+        try await testClient.start(with: self.testType, deviceName: deviceName)
+        return TestResult(
+            uploadSpeed: self.uploadSpeed,
+            downloadSpeed: self.downloadSpeed,
+            uploadTCPMeasurement: self.uploadTCPMeasurement,
+            downloadTCPMeasurement: self.downloadTCPMeasurement
+        )
     }
 
     func stop() {

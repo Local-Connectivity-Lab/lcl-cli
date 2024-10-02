@@ -9,15 +9,15 @@ let package = Package(
         .macOS(.v11)
     ],
     dependencies: [
-        .package(url: "https://github.com/Local-Connectivity-Lab/lcl-ping.git", from: "1.0.0"),
+        .package(url: "https://github.com/Local-Connectivity-Lab/lcl-ping.git", from: "1.0.3"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.3"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.6"),
         .package(url: "https://github.com/scottrhoyt/SwiftyTextTable.git", from: "0.9.0"),
-        .package(url: "https://github.com/johnnzhou/lcl-auth.git", branch: "main"),
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.63.0"),
+        .package(url: "https://github.com/Local-Connectivity-Lab/lcl-auth.git", branch: "main"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.73.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.25.0"),
-        .package(url: "https://github.com/johnnzhou/lcl-speedtest.git", branch: "main"),
-        .package(url: "https://github.com/pakLebah/ANSITerminal", from: "0.0.3")
+        .package(url: "https://github.com/Local-Connectivity-Lab/lcl-speedtest.git", from: "1.0.4"),
+        .package(url: "https://github.com/pakLebah/ANSITerminal", from: "0.0.3"),
     ],
     targets: [
         .executableTarget(
@@ -33,7 +33,7 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
-                .product(name: "LCLSpeedTest", package: "lcl-speedtest"),
+                .product(name: "LCLSpeedtest", package: "lcl-speedtest"),
                 .product(name: "ANSITerminal", package: "ANSITerminal")
             ],
             path: "Sources")

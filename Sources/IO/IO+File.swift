@@ -15,7 +15,6 @@ import Foundation
 // File IO needs to handle
 // read file
 // write to file
-
 class FileIO {
 
     static let `default`: FileIO = .init()
@@ -32,45 +31,6 @@ class FileIO {
 
     func loadFrom(_ url: URL) throws -> Data? {
         return self.fileManager.contents(atPath: url.relativePath)
-    }
-
-    func readLines(from url: URL) throws -> [Data] {
-        let fd = try FileHandle(forReadingFrom: url)
-        var results = [Data]()
-        let newline = UInt8(ascii: "\n")
-        var buffer = Data()
-        var startIndex = 0
-
-        while true {
-            let temp = fd.readData(ofLength: 1024)
-            if temp.isEmpty { break } // EOF
-
-            buffer.append(temp)
-
-            var currentIndex = startIndex
-            // INV: buffer[startIndex : currentIndex - 1] contains all the data before new line character
-            while currentIndex != buffer.count {
-                if buffer[currentIndex] == newline {
-                    // Process the line from startIndex to currentIndex
-                    let lineData = buffer[startIndex..<currentIndex]
-                    if !lineData.isEmpty {
-                        results.append(lineData)
-                    }
-                    startIndex = currentIndex + 1
-                }
-                currentIndex += 1
-            }
-
-            // Remove processed data from buffer up to the last startIndex
-            if startIndex > 0 {
-                buffer.removeSubrange(0..<startIndex)
-                currentIndex -= startIndex
-                startIndex = 0
-            }
-        }
-
-        try fd.close()
-        return results
     }
 
     func fileExists(_ url: URL) -> Bool {
@@ -95,7 +55,7 @@ class FileIO {
     }
 
     func write(data: Data, to fileURL: URL) throws {
-        try data.write(to: fileURL, options: [.atomic])
+        try FileHandle(forWritingTo: fileURL).write(contentsOf: data)
     }
 
     func remove(at fileURL: URL) throws {
