@@ -11,7 +11,6 @@
 //
 
 import Foundation
-import Yams
 import LCLPing
 import LCLSpeedtest
 
@@ -24,8 +23,6 @@ internal func generatePingSummary(
         switch format {
         case .json:
             generateSummaryInJSON(summary: pingSummary)
-        case .yaml:
-            generateSummaryInYAML(summary: pingSummary)
         case .default:
             generatePingSummaryDefault(pingSummary: pingSummary, type: type)
         }
@@ -42,8 +39,6 @@ internal func generateSpeedTestSummary(
         switch format {
         case .json:
             generateSummaryInJSON(summary: speedTestSummary)
-        case .yaml:
-            generateSummaryInYAML(summary: speedTestSummary)
         case .default:
             generateSpeedTestSummaryDefault(speedTestSummary: speedTestSummary, kind: kind, unit: unit)
         }
@@ -59,16 +54,6 @@ private func generateSummaryInJSON(summary: Encodable) {
     }
 
     print(String(data: result, encoding: .utf8)!)
-}
-
-private func generateSummaryInYAML(summary: Encodable) {
-    let yamlEncoder = YAMLEncoder()
-    yamlEncoder.options = .init(sortKeys: true)
-    guard let result = try? yamlEncoder.encode(summary) else {
-        print("PingSummary is corrupted and unable to output in YAML format.")
-        return
-    }
-    print(result)
 }
 
 private func generatePingSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingType) {

@@ -11,13 +11,12 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Local-Connectivity-Lab/lcl-ping.git", from: "1.0.3"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.3"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.6"),
         .package(url: "https://github.com/scottrhoyt/SwiftyTextTable.git", from: "0.9.0"),
         .package(url: "https://github.com/Local-Connectivity-Lab/lcl-auth.git", branch: "main"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.73.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.25.0"),
         .package(url: "https://github.com/Local-Connectivity-Lab/lcl-speedtest.git", from: "1.0.4"),
-        .package(url: "https://github.com/pakLebah/ANSITerminal", from: "0.0.3"),
+        .package(url: "https://github.com/johnnzhou/ANSITerminal.git", from: "0.0.4"),
     ],
     targets: [
         .executableTarget(
@@ -25,7 +24,6 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "LCLPing", package: "lcl-ping"),
-                .product(name: "Yams", package: "Yams"),
                 .product(name: "SwiftyTextTable", package: "SwiftyTextTable"),
                 .product(name: "LCLAuth", package: "lcl-auth"),
                 .product(name: "NIO", package: "swift-nio"),

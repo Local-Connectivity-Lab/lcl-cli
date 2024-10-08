@@ -29,9 +29,6 @@ extension LCLCLI {
         @Flag(help: "Export the Speed Test result in JSON format.")
         var json: Bool = false
 
-        @Flag(help: "Export the Speed Test result in YAML format.")
-        var yaml: Bool = false
-
         static let configuration = CommandConfiguration(commandName: "speedtest", abstract: "Run speedtest using the NDT test infrastructure.")
 
         func run() async throws {
@@ -65,10 +62,6 @@ extension LCLCLI {
             var outputFormats: Set<OutputFormat> = []
             if json {
                 outputFormats.insert(.json)
-            }
-
-            if yaml {
-                outputFormats.insert(.yaml)
             }
 
             if outputFormats.isEmpty {
