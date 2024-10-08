@@ -10,7 +10,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-enum OutputFormat: String {
-    case json
-    case `default`
+import Foundation
+
+struct Constants {
+    static let cliDirectory = ".lcl"
 }

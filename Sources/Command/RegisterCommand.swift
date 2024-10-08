@@ -21,16 +21,15 @@ extension LCLCLI {
         @Option(name: .shortAndLong, help: "Path to the SCN credential file given by the SCN administrator.")
         var filePath: String
 
-        static let configuration = CommandConfiguration(
-                                                            commandName: "register",
-                                                            abstract: "Register with SCN server to report test data."
-                                                        )
+        static let configuration = CommandConfiguration(commandName: "register",
+                                                        abstract: "Register with SCN server to report test data.")
 
         func run() async throws {
             guard let filePathURL = URL(string: filePath), let credentialCode = try FileIO.default.loadFrom(filePathURL) else {
                 throw CLIError.failedToReadFile("Fail to read content from path '\(filePath)'. Exit.")
             }
-            let homeURL = FileIO.default.home.appendingPathComponent(".lcl")
+            
+            let homeURL = FileIO.default.home.appendingPathComponent(Constants.cliDirectory)
             let skURL = homeURL.appendingPathComponent("sk")
             let sigURL = homeURL.appendingPathComponent("sig")
             let rURL = homeURL.appendingPathComponent("r")
@@ -79,14 +78,14 @@ extension LCLCLI {
             let sk_t = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
             let pk_t = ECDSA.derivePublicKey(from: sk_t)
             outputData.append(pk_t.derRepresentation)
-            let h_sec = digest(data: outputData, algorithm: .SHA256)
+            var h_sec = digest(data: outputData, algorithm: .SHA256)
             outputData.removeAll()
             outputData.append(validationResult.hPKR)
             outputData.append(h_sec)
-            let h_concat = Data(outputData)
-            let sigma_r = try ECDSA.sign(message: h_concat, privateKey: sk_t)
+            var h_concat = Data(outputData)
+            var sigma_r = try ECDSA.sign(message: h_concat, privateKey: sk_t)
             let registration = RegistrationModel(sigmaR: sigma_r.hex, h: h_concat.hex, R: validationResult.R.hex)
-            let registrationJson = try encoder.encode(registration)
+            var registrationJson = try encoder.encode(registration)
             switch await NetworkingAPI.send(to: NetworkingAPI.Endpoint.register.url, using: registrationJson) {
             case .success:
                 print("Registration complete!")
@@ -97,24 +96,18 @@ extension LCLCLI {
             let validationJson = try encoder.encode(validationResult)
             let privateKey = try ECDSA.deserializePrivateKey(raw: validationResult.skT)
             let signature = try ECDSA.sign(message: validationJson, privateKey: privateKey)
-
-            let symmetricKey = SymmetricKey(size: .bits256)
-            try encryptAndWriteData(validationResult.R, to: rURL, using: symmetricKey)
-            try encryptAndWriteData(validationResult.hPKR, to: hpkrURL, using: symmetricKey)
-            try encryptAndWriteData(validationResult.skT, to: skURL, using: symmetricKey)
-            try encryptAndWriteData(signature, to: sigURL, using: symmetricKey)
-
-            let symmetricKeyData = symmetricKey.withUnsafeBytes { pointer in
-                return Data(pointer)
-            }
-
-            try FileIO.default.write(data: symmetricKeyData, to: keyURL)
-        }
-
-        private func encryptAndWriteData(_ data: Data, to fileURL: URL, using key: SymmetricKey) throws {
-            var encrypted = try LCLAuth.encrypt(plainText: data, key: key)
-            try FileIO.default.write(data: encrypted, to: fileURL)
-            encrypted.removeAll()
+            
+            try FileIO.default.write(data: validationResult.R, to: rURL)
+            try FileIO.default.write(data: validationResult.hPKR, to: hpkrURL)
+            try FileIO.default.write(data: validationResult.skT, to: skURL)
+            try FileIO.default.write(data: signature, to: sigURL)
+            
+            // cleanup
+            outputData.removeAll()
+            h_concat.removeAll()
+            sigma_r.removeAll()
+            h_sec.removeAll()
+            registrationJson.removeAll()
         }
     }
 }

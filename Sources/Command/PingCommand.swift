@@ -49,9 +49,6 @@ extension LCLCLI {
         @Flag(help: "Export the Ping result in JSON format.")
         var json: Bool = false
 
-        @Flag(help: "Export the Ping result in YAML format.")
-        var yaml: Bool = false
-
         static var configuration: CommandConfiguration = CommandConfiguration(
             commandName: "icmp",
             abstract: "Run ICMP Ping Latency and Reachability Test."
@@ -76,10 +73,6 @@ extension LCLCLI {
                 var outputFormats: Set<OutputFormat> = []
                 if json {
                     outputFormats.insert(.json)
-                }
-
-                if yaml {
-                    outputFormats.insert(.yaml)
                 }
 
                 if outputFormats.isEmpty {
@@ -131,11 +124,11 @@ extension LCLCLI {
         @Flag(help: "Use URLSession on Apple platform for underlying networking and measurement. This flag has no effect on Linux platform.")
         var useURLSession: Bool = false
 
+        @Option(name: .long, help: "Specify the device name to which the data will be sent.")
+        var deviceName: String?
+
         @Flag(help: "Export the Ping result in JSON format.")
         var json: Bool = false
-
-        @Flag(help: "Export the Ping result in YAML format.")
-        var yaml: Bool = false
 
         static var configuration: CommandConfiguration = CommandConfiguration(
             commandName: "http",
@@ -143,7 +136,7 @@ extension LCLCLI {
         )
 
         func run() throws {
-            var config = try HTTPPingClient.Configuration(url: url)
+            var config = try HTTPPingClient.Configuration(url: url, deviceName: deviceName)
             if let count = count {
                 config.count = Int(count)
             }
@@ -175,10 +168,6 @@ extension LCLCLI {
             var outputFormats: Set<OutputFormat> = []
             if json {
                 outputFormats.insert(.json)
-            }
-
-            if yaml {
-                outputFormats.insert(.yaml)
             }
 
             if outputFormats.isEmpty {

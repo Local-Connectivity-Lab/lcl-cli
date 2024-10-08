@@ -11,9 +11,8 @@
 //
 
 import Foundation
-import Yams
 import LCLPing
-import LCLSpeedTest
+import LCLSpeedtest
 
 internal func generatePingSummary(
     _ pingSummary: PingSummary,
@@ -24,8 +23,6 @@ internal func generatePingSummary(
         switch format {
         case .json:
             generateSummaryInJSON(summary: pingSummary)
-        case .yaml:
-            generateSummaryInYAML(summary: pingSummary)
         case .default:
             generatePingSummaryDefault(pingSummary: pingSummary, type: type)
         }
@@ -42,8 +39,6 @@ internal func generateSpeedTestSummary(
         switch format {
         case .json:
             generateSummaryInJSON(summary: speedTestSummary)
-        case .yaml:
-            generateSummaryInYAML(summary: speedTestSummary)
         case .default:
             generateSpeedTestSummaryDefault(speedTestSummary: speedTestSummary, kind: kind, unit: unit)
         }
@@ -59,16 +54,6 @@ private func generateSummaryInJSON(summary: Encodable) {
     }
 
     print(String(data: result, encoding: .utf8)!)
-}
-
-private func generateSummaryInYAML(summary: Encodable) {
-    let yamlEncoder = YAMLEncoder()
-    yamlEncoder.options = .init(sortKeys: true)
-    guard let result = try? yamlEncoder.encode(summary) else {
-        print("PingSummary is corrupted and unable to output in YAML format.")
-        return
-    }
-    print(result)
 }
 
 private func generatePingSummaryDefault(pingSummary: PingSummary, type: LCLPing.PingType) {
@@ -113,4 +98,7 @@ private func generateSpeedTestSummaryDefault(
     print("Average: \(speedTestSummary.avg.round(to: 2)) \(unit.string)")
     print("Medium: \(speedTestSummary.median.round(to: 2)) \(unit.string)")
     print("Standard Deviation: \(speedTestSummary.stdDev.round(to: 2)) \(unit.string)")
+    print("Latency: \(speedTestSummary.latency.round(to: 2)) ms")
+    print("Latency Variance: \(speedTestSummary.latencyVariance.round(to: 2)) ms")
+    print("Retransmit Rate: \((speedTestSummary.retransmit * 100.0).round(to: 2)) %")
 }

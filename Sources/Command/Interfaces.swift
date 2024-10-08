@@ -11,7 +11,7 @@
 //
 
 import ArgumentParser
-import LCLPing
+import NIOCore
 
 struct NetworkInterfaceCommand: AsyncParsableCommand {
     static var configuration: CommandConfiguration = CommandConfiguration(
@@ -24,7 +24,7 @@ struct NetworkInterfaceCommand: AsyncParsableCommand {
         for interface in availableInterfaces {
             let sortedHostNames = interface.value.sorted()
             let interfaceName = interface.key
-            print("\(interfaceName)      \(sortedHostNames)")
+            print("\(interfaceName)\t\(sortedHostNames)")
         }
     }
 }
