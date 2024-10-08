@@ -4,7 +4,6 @@
 
 ---
 # LCL CLI
----
 LCL CLI is a cross-platform cli tool written in Swift. It is designed to measure the network performance and latency through LCL's cellular network measurement testbed. While this tool is design for Local Connectivity Lab researchers and Seattle Community Network volunteers and users, everyone is welcome to use this tool to measure their network performance.
 
 ## Usage
