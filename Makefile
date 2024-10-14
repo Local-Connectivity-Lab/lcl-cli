@@ -6,6 +6,6 @@ clean:
 build-test:
 	swift build
 
-.PHONY: build
-build:
+.PHONY: build-release
+build-release:
 	swift build --static-swift-stdlib -c release
