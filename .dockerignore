@@ -1,0 +1,22 @@
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore build artifacts
+.build/
+
+# Ignore Xcode project files
+*.xcodeproj/
+xcuserdata/
+
+# Ignore Swift Package Manager files
+.swiftpm/
+Package.resolved
+
+# Ignore user configuration files
+.netrc
+.vscode/
+
+# Ignore other temporary files or directories
+DerivedData/
+images/
+release/
