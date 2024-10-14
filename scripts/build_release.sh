@@ -22,19 +22,26 @@ case "$raw_arch" in
         ;;
 esac
 
-release_tag="$(git describe --tags --abbrev=0)"
+release_tag="$(git describe --tags `git rev-list --tags --max-count=1`)"
 echo "Release version: $release_tag"
 
-git checkout tags "$release_tag"
+git checkout "$release_tag"
 
+mkdir -p release
 
 function build_with_container() {
     local platform=$1
-    local image_name="lcl-cli-$release_tag"
-    local binary_name_prefix="lcl-cli-$arch-$release_tag"
-    docker build -t "$image_name" -f docker/build_"$platform".dockerfile
+    local image_name="lcl-cli-$release_tag-$platform"
+    local binary_name_prefix="lcl-cli-$release_tag-$arch"
+
+    echo "arch: $arch"
+    echo "platform: $platform"
+    echo "image_name: $image_name"
+    echo "binary_name: $binary_name_prefix"
+
+    docker build -t "$image_name" -f "docker/build_$platform.dockerfile" .
     local container_id=$(docker create "$image_name")
-    docker cp "$container_id:/lcl" "$image_name-$platform"
+    docker cp "$container_id:/lcl" "release/$binary_name_prefix-$platform"
     docker rm -v "$container_id"
     docker image rm -f "$image_name"
 
@@ -43,4 +50,3 @@ function build_with_container() {
 
 build_with_container ubuntu
 build_with_container debian
-

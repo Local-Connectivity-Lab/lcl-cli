@@ -1,10 +1,11 @@
 FROM swift:5.10.1-bookworm
 
-RUN apt update \
+RUN apt update && \
     apt install build-essential -y
 
 COPY . /tmp/lcl-cli
 WORKDIR /tmp/lcl-cli
+RUN ls -a
 
 RUN swift build \
     --static-swift-stdlib \
