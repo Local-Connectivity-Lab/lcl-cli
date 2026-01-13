@@ -143,13 +143,13 @@ extension LCLCLI {
                 #if DEBUG
                 print(configuration ?? "Empty configuration")
                 #endif
-                let siteMap = Dictionary(uniqueKeysWithValues: sites.map { ($0.name, $0) })
-                guard let cellSiteName = configuration?.cellSiteName else {
-                    throw CLIError.invalidConfiguration("Missing cellular site name.")
+                let siteMap = Dictionary(uniqueKeysWithValues: sites.map { ($0._id, $0) })
+                guard let cellSiteId = configuration?.cellSiteId else {
+                    throw CLIError.invalidConfiguration("Missing cellular site ID.")
                 }
 
-                guard let ss = siteMap[cellSiteName] else {
-                    throw CLIError.invalidConfiguration("Invalid cellular site name.")
+                guard let ss = siteMap[cellSiteId] else {
+                    throw CLIError.invalidConfiguration("Invalid cellular site ID.")
                 }
                 selectedSite = ss
             }

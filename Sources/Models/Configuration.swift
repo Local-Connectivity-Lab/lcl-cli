@@ -13,6 +13,6 @@
 import Foundation
 
 struct Configuration: Decodable {
-    let cellSiteName: String
+    let cellSiteId: String
     let deviceName: String
 }

@@ -14,8 +14,9 @@ import Foundation
 import SwiftyTextTable
 
 struct CellularSite: Decodable, Identifiable {
-    var id: String { name }
+    var id: String { _id }
 
+    let _id: String
     let address: String
     let cellId: [String]
     let latitude: Double
@@ -27,6 +28,7 @@ struct CellularSite: Decodable, Identifiable {
 
 extension CellularSite {
     enum CodingKeys: String, CodingKey {
+        case _id = "_id"
         case name = "name"
         case latitude = "latitude"
         case longitude = "longitude"
